@@ -1,0 +1,114 @@
+managed;
+strict ( 2 );
+with draft;
+define behavior for ZI_MATRIX_005 alias Matrix
+implementation in class zbp_i_matrix_005 unique
+persistent table zmatrix_005
+draft table zmatrix_005d
+lock master
+total etag LastChangedAt
+authorization master ( instance )
+etag master LocalLastChangedAt
+{
+  create;
+  update;
+  delete;
+
+  // Actions:
+  action create_items;
+  action create_sales_order;
+  action get_sales_order;
+  action update_sales_order;
+  // Events:
+  determination on_create on modify { field MatrixUUID; }
+  determination on_model on save { field Model, Color; }
+  //determination on_modify on modify { field Model, Color; }
+
+  association _Size { create ( features : instance, authorization : update ); with draft; }
+  association _Item { create ( features : instance, authorization : update ); with draft; }
+
+  field ( numbering : managed, readonly ) MatrixUUID;
+  field ( readonly ) MatrixID;
+  field ( readonly ) SalesOrderID;
+
+  draft action Resume with additional implementation;
+  draft action Edit with additional implementation;
+  draft action Activate with additional implementation;
+  draft action Discard /*with additional implementation*/;
+
+  draft determine action Prepare {
+    //determination on_prepare;
+  }
+
+  mapping for ZMATRIX_005
+  {
+    MatrixUUID              = matrixuuid;
+    MatrixID                = matrixid;
+    OrganizationDivision    = organizationdivision;
+    SalesOrderID            = salesorderid;
+    SalesOrderType          = salesordertype;
+    SalesOrganization       = salesorganization;
+    SoldToParty             = soldtoparty;
+    DistributionChannel     = distributionchannel;
+    Model                   = model;
+    Color                   = color;
+    PurchaseOrderByCustomer = purchaseorderbycustomer;
+    CreationDate            = creationdate;
+    CreationTime            = creationtime;
+    CreatedBy               = createdby;
+    CreatedAt               = createdat;
+    LastChangedAt           = lastchangedat;
+    LastChangedBy           = lastchangedby;
+    LocalLastChangedAt      = locallastchangedat;
+  }
+  side effects
+  {
+    //field Data1 affects field Data3;
+    //field Data2 affects field Data3;
+    //action create_items affects entity _Item;
+    //action create_sales_order affects messages;
+    field Model affects entity _Size;
+    field Color affects entity _Size;
+    action get_sales_order affects field SalesOrderID, entity _Item;
+  }
+
+}
+
+define behavior for ZI_SIZE_005 alias Size
+implementation in class zbp_i_size_005 unique
+persistent table zsize_005
+draft table zsize_005d
+lock dependent by _Matrix
+authorization dependent by _Matrix
+etag master LocalLastChangedAt
+{
+  update;
+  delete;
+
+  field ( readonly ) MatrixUUID;
+  field ( readonly ) SizeID;
+  field ( readonly ) Back;
+  field ( readonly ) LocalLastChangedAt;
+
+  association _Matrix { with draft; }
+}
+
+define behavior for ZI_ITEM_005 alias Item
+implementation in class zbp_i_item_005 unique
+persistent table zitem_005
+draft table zitem_005d
+lock dependent by _Matrix
+authorization dependent by _Matrix
+etag master LocalLastChangedAt
+{
+  update;
+  delete;
+
+  field ( readonly ) MatrixUUID;
+  field ( readonly ) ItemID;
+  field ( readonly ) Product;
+  field ( readonly ) Quantity;
+  field ( readonly ) LocalLastChangedAt;
+
+  association _Matrix { with draft; }
+}
