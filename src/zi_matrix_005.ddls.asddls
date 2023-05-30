@@ -1,5 +1,5 @@
 @AccessControl.authorizationCheck: #NOT_REQUIRED
-@EndUserText.label: 'ZI_MATRIX_005'
+@EndUserText.label: 'Matrix'
 define root view entity ZI_MATRIX_005 as select from zmatrix_005 as Matrix
 composition [0..*] of ZI_SIZE_005 as _Size
 composition [0..*] of ZI_ITEM_005 as _Item
@@ -17,6 +17,9 @@ composition [0..*] of ZI_ITEM_005 as _Item
     creationdate as CreationDate,
     creationtime as CreationTime,
     salesorderid as SalesOrderID,
+    salesorderurl as SalesOrderURL,
+    customerurl as CustomerURL,
+    matrixtypeid as MatrixTypeID,
     createdby as CreatedBy,
     createdat as CreatedAt,
     lastchangedby as LastChangedBy,

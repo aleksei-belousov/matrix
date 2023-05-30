@@ -1,0 +1,34 @@
+@Metadata.layer: #CORE
+@UI: {
+  headerInfo: { typeName: 'Color',
+                typeNamePlural: 'Color',
+                title: { type: #STANDARD, label: 'Color', value: 'ColorID' } },
+  presentationVariant: [{ sortOrder: [{ by: 'ColorID', direction: #ASC }] }] }
+
+annotate entity ZC_COLOR_005 with 
+{
+
+    @UI.hidden: true
+    ColorUUID;
+
+  @UI: {  lineItem:       [ { position: 30, label: 'Model ID', cssDefault.width: '300px' } ],
+          identification: [ { position: 30, label: 'Model ID', cssDefault.width: '300px' } ],
+          selectionField: [ { position: 30 } ] }
+    ColorID;
+
+    @UI.hidden: true
+    CreatedBy;
+
+    @UI.hidden: true
+    CreatedAt;
+
+    @UI.hidden: true
+    LastChangedBy;
+
+    @UI.hidden: true
+    LastChangedAt;
+
+    @UI.hidden: true
+    LocalLastChangedAt;
+    
+}

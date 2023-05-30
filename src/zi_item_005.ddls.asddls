@@ -1,5 +1,5 @@
 @AccessControl.authorizationCheck: #NOT_REQUIRED
-@EndUserText.label: 'ZI_ITEM_005'
+@EndUserText.label: 'Item'
 define view entity ZI_ITEM_005 as select from zitem_005 as Item
 association to parent ZI_MATRIX_005 as _Matrix on $projection.MatrixUUID = _Matrix.MatrixUUID
 {

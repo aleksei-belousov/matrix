@@ -1,0 +1,33 @@
+@Metadata.layer: #CORE
+@UI: {
+  headerInfo: { typeName: 'Model',
+                typeNamePlural: 'Model',
+                title: { type: #STANDARD, label: 'Model', value: 'ModelID' } },
+  presentationVariant: [{ sortOrder: [{ by: 'ModelID', direction: #ASC }] }] }
+
+annotate entity ZC_MODEL_005 with 
+{
+
+    @UI.hidden: true
+    ModelUUID;
+
+    @UI: {  lineItem:       [ { position: 30, label: 'Model ID', cssDefault.width: '300px' } ],
+            identification: [ { position: 30, label: 'Model ID', cssDefault.width: '300px' } ],
+            selectionField: [ { position: 30 } ] }
+    ModelID;
+
+    @UI.hidden: true
+    CreatedBy;
+
+    @UI.hidden: true
+    CreatedAt;
+
+    @UI.hidden: true
+    LastChangedBy;
+
+    @UI.hidden: true
+    LastChangedAt;
+
+    @UI.hidden: true
+    LocalLastChangedAt;    
+}

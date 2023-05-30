@@ -15,7 +15,7 @@ etag master LocalLastChangedAt
   delete;
 
   // Actions:
-  action create_items;
+  //action create_items;
   action create_sales_order;
   action get_sales_order;
   action update_sales_order;
@@ -53,6 +53,8 @@ etag master LocalLastChangedAt
     Model                   = model;
     Color                   = color;
     PurchaseOrderByCustomer = purchaseorderbycustomer;
+    SalesOrderURL           = salesorderurl;
+    CustomerURL             = customerurl;
     CreationDate            = creationdate;
     CreationTime            = creationtime;
     CreatedBy               = createdby;
@@ -69,7 +71,7 @@ etag master LocalLastChangedAt
     //action create_sales_order affects messages;
     field Model affects entity _Size;
     field Color affects entity _Size;
-    action get_sales_order affects field SalesOrderID, entity _Item;
+    action get_sales_order affects field SalesOrderID, field SalesOrderURL, entity _Item;
   }
 
 }

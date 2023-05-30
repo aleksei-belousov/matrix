@@ -1,0 +1,4 @@
+@EndUserText.label: 'ZSD_COLOR_005'
+define service ZSD_COLOR_005 {
+  expose ZC_COLOR_005;
+}

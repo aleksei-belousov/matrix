@@ -8,23 +8,23 @@
 annotate entity ZC_MATRIX_005 with 
 {
 
-  @UI.facet: [{ id:            'Matrix',
-                purpose:       #STANDARD,
-                type:          #IDENTIFICATION_REFERENCE,
-                label:         'Sales Order',
-                position:      10 },
-              { id:            'Size',
-                purpose:       #STANDARD,
-                type:          #LINEITEM_REFERENCE,
-                label:         'Size',
-                position:      20,
-                targetElement: '_Size'},
-              { id:            'Item',
-                purpose:       #STANDARD,
-                type:          #LINEITEM_REFERENCE,
-                label:         'Item',
-                position:      30,
-                targetElement: '_Item'}]
+    @UI.facet: [{ id:            'Matrix',
+                  purpose:       #STANDARD,
+                  type:          #IDENTIFICATION_REFERENCE,
+                  label:         'Sales Order',
+                  position:      10 },
+                { id:            'Size',
+                  purpose:       #STANDARD,
+                  type:          #LINEITEM_REFERENCE,
+                  label:         'Size',
+                  position:      20,
+                  targetElement: '_Size'},
+                { id:            'Item',
+                  purpose:       #STANDARD,
+                  type:          #LINEITEM_REFERENCE,
+                  label:         'Item',
+                  position:      30,
+                  targetElement: '_Item'}]
 
     @UI.hidden: true
     MatrixUUID;
@@ -35,54 +35,69 @@ annotate entity ZC_MATRIX_005 with
     @UI.hidden: true
     MatrixID;
     
-  @UI: {  lineItem:       [ { position: 30, label: 'Sales Order ID', cssDefault.width: '300px' } ],
-          identification: [ { position: 30, label: 'Sales Order ID', cssDefault.width: '300px' },
+    @UI: {  lineItem:       [ { position: 30, label: 'Sales Order ID', type: #WITH_URL, url: 'SalesOrderURL' } ],
+            identification: [ { position: 30, label: 'Sales Order ID', cssDefault.width: '300px', type: #WITH_URL, url: 'SalesOrderURL' },
                             /*{ type: #FOR_ACTION, dataAction: 'create_items',        label: 'Create Items' },*/
-                            { type: #FOR_ACTION, dataAction: 'create_sales_order',  label: 'Create Sales Order' },
-                            { type: #FOR_ACTION, dataAction: 'update_sales_order',  label: 'Update Sales Order' },
-                            { type: #FOR_ACTION, dataAction: 'get_sales_order',     label: 'Get Sales Order' } ],
-          selectionField: [ { position: 30 } ] }
+                              { type: #FOR_ACTION, dataAction: 'create_sales_order',  label: 'Create Sales Order' },
+                              { type: #FOR_ACTION, dataAction: 'update_sales_order',  label: 'Update Sales Order' },
+                              { type: #FOR_ACTION, dataAction: 'get_sales_order',     label: 'Get Sales Order' } ],
+            selectionField: [ { position: 30 } ] }
     SalesOrderID;
 
-  @UI: {  lineItem:       [ { position: 40, label: 'Sales Order Type', cssDefault.width: '300px' } ],
-          identification: [ { position: 40, label: 'Sales Order Type', cssDefault.width: '300px' } ],
-          selectionField: [ { position: 40 } ] }
+    @UI: {  lineItem:       [ { position: 40, label: 'Sales Order Type', cssDefault.width: '300px' } ],
+            identification: [ { position: 40, label: 'Sales Order Type', cssDefault.width: '300px' } ],
+            selectionField: [ { position: 40 } ] }
     SalesOrderType;
     
-  @UI: {  lineItem:       [ { position: 50, label: 'Sales Organization', cssDefault.width: '300px' } ],
-          identification: [ { position: 50, label: 'Sales Organization', cssDefault.width: '300px' } ],
-          selectionField: [ { position: 50 } ] }
+    @UI: {  lineItem:       [ { position: 50, label: 'Sales Organization', cssDefault.width: '300px' } ],
+            identification: [ { position: 50, label: 'Sales Organization', cssDefault.width: '300px' } ],
+            selectionField: [ { position: 50 } ] }
     SalesOrganization;
     
-  @UI: {  lineItem:       [ { position: 60, label: 'Distribution Channel', cssDefault.width: '300px' } ],
-          identification: [ { position: 60, label: 'Distribution Channel', cssDefault.width: '300px' } ],
-          selectionField: [ { position: 60 } ] }
+    @UI: {  lineItem:       [ { position: 60, label: 'Distribution Channel', cssDefault.width: '300px' } ],
+            identification: [ { position: 60, label: 'Distribution Channel', cssDefault.width: '300px' } ],
+            selectionField: [ { position: 60 } ] }
     DistributionChannel;
     
-  @UI: {  lineItem:       [ { position: 70, label: 'Organization Division', cssDefault.width: '300px' } ],
-          identification: [ { position: 70, label: 'Organization Division', cssDefault.width: '300px' } ],
-          selectionField: [ { position: 70 } ] }
+    @UI: {  lineItem:       [ { position: 70, label: 'Organization Division', cssDefault.width: '300px' } ],
+            identification: [ { position: 70, label: 'Organization Division', cssDefault.width: '300px' } ],
+            selectionField: [ { position: 70 } ] }
     OrganizationDivision;
 
-  @UI: {  lineItem:       [ { position: 80, label: 'Sold To Party', cssDefault.width: '300px' } ],
-          identification: [ { position: 80, label: 'Sold To Party', cssDefault.width: '300px' } ],
-          selectionField: [ { position: 80 } ] }
+    @UI: {  lineItem:       [ { position: 80, label: 'Sold To Party', cssDefault.width: '300px', type: #WITH_URL, url: 'CustomerURL' } ],
+            identification: [ { position: 80, label: 'Sold To Party', cssDefault.width: '300px', type: #WITH_URL, url: 'CustomerURL' } ],
+            selectionField: [ { position: 80 } ] }
     SoldToParty;
 
-  @UI: {  lineItem:       [ { position: 90, label: 'Model', cssDefault.width: '300px' } ],
-          identification: [ { position: 90, label: 'Model', cssDefault.width: '300px' } ],
-          selectionField: [ { position: 90 } ] }
+    @UI: {  lineItem:       [ { position: 90, label: 'Model', cssDefault.width: '300px' } ],
+            identification: [ { position: 90, label: 'Model', cssDefault.width: '300px' } ],
+            selectionField: [ { position: 90 } ] }
     Model;
 
-  @UI: {  lineItem:       [ { position: 100, label: 'Color', cssDefault.width: '300px' } ],
-          identification: [ { position: 100, label: 'Color', cssDefault.width: '300px' } ],
-          selectionField: [ { position: 100 } ] }
+    @UI: {  lineItem:       [ { position: 100, label: 'Color', cssDefault.width: '300px' } ],
+            identification: [ { position: 100, label: 'Color', cssDefault.width: '300px' } ],
+            selectionField: [ { position: 100 } ] }
     Color;
 
-  @UI: {  lineItem:       [ { position: 110, label: 'Customer Reference', cssDefault.width: '300px' } ],
-          identification: [ { position: 110, label: 'Customer Reference', cssDefault.width: '300px' } ],
-          selectionField: [ { position: 110 } ] }
+    @UI: {  lineItem:       [ { position: 110, label: 'Customer Reference', cssDefault.width: '300px' } ],
+            identification: [ { position: 110, label: 'Customer Reference', cssDefault.width: '300px' } ],
+            selectionField: [ { position: 110 } ] }
     PurchaseOrderByCustomer;
+
+    @UI: {  lineItem:       [ { position: 120, label: 'Matrix Type ID', cssDefault.width: '200px' } ],
+            identification: [ { position: 120, label: 'Matrix Type ID', cssDefault.width: '200px' } ],
+            selectionField: [ { position: 120 } ] }
+    MatrixTypeID;
+
+    @UI: {  lineItem:       [ { position: 130, label: 'Sales Order URL', cssDefault.width: '300px' } ],
+            identification: [ { position: 130, label: 'Sales Order URL', cssDefault.width: '300px' } ] }
+    @UI.hidden: true
+    SalesOrderURL;
+
+    @UI: {  lineItem:       [ { position: 140, label: 'Customer URL', cssDefault.width: '300px' } ],
+            identification: [ { position: 140, label: 'Customer URL', cssDefault.width: '300px' } ] }
+    @UI.hidden: true
+    CustomerURL;
 
     @UI.hidden: true
     CreationDate;
