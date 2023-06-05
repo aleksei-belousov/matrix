@@ -7,6 +7,7 @@ define view entity ZC_CUPSIZE_005 as projection on ZI_CUPSIZE_005 as Cupsize
     MatrixTypeUUID,
     CupSizeID,
     Description,
+    Sort,
     CreatedBy,
     CreatedAt,
     LastChangedBy,

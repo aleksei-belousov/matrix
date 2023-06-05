@@ -28,8 +28,14 @@ CLASS lhc_matrix DEFINITION INHERITING FROM cl_abap_behavior_handler.
     METHODS activate FOR MODIFY
       IMPORTING keys FOR ACTION matrix~activate.
 
-    METHODS on_model FOR DETERMINE ON SAVE " on model/color
-      IMPORTING keys FOR matrix~on_model.
+    METHODS on_modelcolor FOR DETERMINE ON SAVE " on model/color
+      IMPORTING keys FOR matrix~on_modelcolor.
+
+    METHODS on_matrixtypeid FOR DETERMINE ON SAVE " on matrixtypeid/country
+      IMPORTING keys FOR matrix~on_matrixtypeid.
+
+    METHODS check_atp FOR MODIFY
+      IMPORTING keys FOR ACTION matrix~check_atp.
 
 ENDCLASS. " lhc_matrix DEFINITION
 
@@ -500,6 +506,19 @@ CLASS lhc_matrix IMPLEMENTATION.
 
     ENDLOOP.
 
+*   Set Link to Customer
+    LOOP AT it_matrix_result INTO wa_matrix_result.
+        DATA(customerURL) = |/ui#Customer-displayFactSheet?sap-ui-tech-hint=GUI&/C_CustomerOP('| && condense( val = |{ wa_matrix_result-soldtoparty ALPHA = OUT }| ) && |')|.
+        MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+            ENTITY Matrix
+            UPDATE FIELDS ( CustomerURL )
+            WITH VALUE #( (
+                %key        = key-%key
+                CustomerURL = customerURL
+            ) ).
+
+    ENDLOOP.
+
   ENDMETHOD. " on_create
 
   METHOD Edit. " Edit
@@ -591,213 +610,287 @@ CLASS lhc_matrix IMPLEMENTATION.
 
 *       Add New Items based on Actual Size table
         LOOP AT it_size INTO DATA(wa_size).
-            IF ( wa_size-a IS NOT INITIAL ).
-                maxid = maxid + 1.
-                cid = maxid.
-                backsize    = wa_size-Back.
-                cupsize     = 'A'.
-                product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-                quantity    = wa_size-a.
-                wa_item_create = VALUE #(
-                    MatrixUUID = key-MatrixUUID
-                    %target = VALUE #( (
-                        %cid            = cid
-                        ItemID          = cid
-                        MatrixUUID      = wa_matrix-MatrixUUID
-                        Cupsize         = cupsize
-                        Backsize        = backsize
-                        Quantity        = quantity
-                        Model           = model
-                        Color           = color
-                        Product         = product
-                    ) )
-                ).
-                APPEND wa_item_create TO it_item_create.
-            ENDIF.
-            IF ( wa_size-b IS NOT INITIAL ).
-                maxid = maxid + 1.
-                cid = maxid.
-                backsize    = wa_size-Back.
-                cupsize     = 'B'.
-                quantity    = wa_size-b.
-                product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-                wa_item_create = VALUE #(
-                    MatrixUUID = key-MatrixUUID
-                    %target = VALUE #( (
-                        %cid            = cid
-                        ItemID          = cid
-                        MatrixUUID      = wa_matrix-MatrixUUID
-                        Cupsize         = cupsize
-                        Backsize        = backsize
-                        Quantity        = quantity
-                        Model           = model
-                        Color           = color
-                        Product         = product
-                    ) )
-                ).
-                APPEND wa_item_create TO it_item_create.
-            ENDIF.
-            IF ( wa_size-c IS NOT INITIAL ).
-                maxid = maxid + 1.
-                cid = maxid.
-                backsize    = wa_size-Back.
-                cupsize     = 'C'.
-                quantity    = wa_size-c.
-                product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-                wa_item_create = VALUE #(
-                    MatrixUUID = key-MatrixUUID
-                    %target = VALUE #( (
-                        %cid            = cid
-                        ItemID          = cid
-                        MatrixUUID      = wa_matrix-MatrixUUID
-                        Cupsize         = cupsize
-                        Backsize        = backsize
-                        Quantity        = quantity
-                        Model           = model
-                        Color           = color
-                        Product         = product
-                    ) )
-                ).
-                APPEND wa_item_create TO it_item_create.
-            ENDIF.
-            IF ( wa_size-d IS NOT INITIAL ).
-                maxid = maxid + 1.
-                cid = maxid.
-                backsize    = wa_size-Back.
-                cupsize     = 'D'.
-                quantity    = wa_size-d.
-                product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-                wa_item_create = VALUE #(
-                    MatrixUUID = key-MatrixUUID
-                    %target = VALUE #( (
-                        %cid            = cid
-                        ItemID          = cid
-                        MatrixUUID      = wa_matrix-MatrixUUID
-                        Cupsize         = cupsize
-                        Backsize        = backsize
-                        Quantity        = quantity
-                        Model           = model
-                        Color           = color
-                        Product         = product
-                    ) )
-                ).
-                APPEND wa_item_create TO it_item_create.
-            ENDIF.
-            IF ( wa_size-e IS NOT INITIAL ).
-                maxid = maxid + 1.
-                cid = maxid.
-                backsize    = wa_size-Back.
-                cupsize     = 'E'.
-                quantity    = wa_size-e.
-                product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-                wa_item_create = VALUE #(
-                    MatrixUUID = key-MatrixUUID
-                    %target = VALUE #( (
-                        %cid            = cid
-                        ItemID          = cid
-                        MatrixUUID      = wa_matrix-MatrixUUID
-                        Cupsize         = cupsize
-                        Backsize        = backsize
-                        Quantity        = quantity
-                        Model           = model
-                        Color           = color
-                        Product         = product
-                    ) )
-                ).
-                APPEND wa_item_create TO it_item_create.
-            ENDIF.
-            IF ( wa_size-f IS NOT INITIAL ).
-                maxid = maxid + 1.
-                cid = maxid.
-                backsize    = wa_size-Back.
-                cupsize     = 'F'.
-                quantity    = wa_size-f.
-                product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-                wa_item_create = VALUE #(
-                    MatrixUUID = key-MatrixUUID
-                    %target = VALUE #( (
-                        %cid            = cid
-                        ItemID          = cid
-                        MatrixUUID      = wa_matrix-MatrixUUID
-                        Cupsize         = cupsize
-                        Backsize        = backsize
-                        Quantity        = quantity
-                        Model           = model
-                        Color           = color
-                        Product         = product
-                    ) )
-                ).
-                APPEND wa_item_create TO it_item_create.
-            ENDIF.
-            IF ( wa_size-g IS NOT INITIAL ).
-                maxid = maxid + 1.
-                cid = maxid.
-                backsize    = wa_size-Back.
-                cupsize     = 'G'.
-                quantity    = wa_size-g.
-                product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-                wa_item_create = VALUE #(
-                    MatrixUUID = key-MatrixUUID
-                    %target = VALUE #( (
-                        %cid            = cid
-                        ItemID          = cid
-                        MatrixUUID      = wa_matrix-MatrixUUID
-                        Cupsize         = cupsize
-                        Backsize        = backsize
-                        Quantity        = quantity
-                        Model           = model
-                        Color           = color
-                        Product         = product
-                    ) )
-                ).
-                APPEND wa_item_create TO it_item_create.
-            ENDIF.
-            IF ( wa_size-h IS NOT INITIAL ).
-                maxid = maxid + 1.
-                cid = maxid.
-                backsize    = wa_size-Back.
-                cupsize     = 'H'.
-                quantity    = wa_size-h.
-                product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-                wa_item_create = VALUE #(
-                    MatrixUUID = key-MatrixUUID
-                    %target = VALUE #( (
-                        %cid            = cid
-                        ItemID          = cid
-                        MatrixUUID      = wa_matrix-MatrixUUID
-                        Cupsize         = cupsize
-                        Backsize        = backsize
-                        Quantity        = quantity
-                        Model           = model
-                        Color           = color
-                        Product         = product
-                    ) )
-                ).
-                APPEND wa_item_create TO it_item_create.
-            ENDIF.
-            IF ( wa_size-i IS NOT INITIAL ).
-                maxid = maxid + 1.
-                cid = maxid.
-                backsize    = wa_size-Back.
-                cupsize     = 'I'.
-                quantity    = wa_size-i.
-                product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-                wa_item_create = VALUE #(
-                    MatrixUUID = key-MatrixUUID
-                    %target = VALUE #( (
-                        %cid            = cid
-                        ItemID          = cid
-                        MatrixUUID      = wa_matrix-MatrixUUID
-                        Cupsize         = cupsize
-                        Backsize        = backsize
-                        Quantity        = quantity
-                        Model           = model
-                        Color           = color
-                        Product         = product
-                    ) )
-                ).
-                APPEND wa_item_create TO it_item_create.
-            ENDIF.
+            CASE wa_matrix-matrixtypeid.
+                WHEN 'SLIP' OR 'INT' OR 'MIEDER' OR 'OhneGr'.
+                    IF ( wa_size-a IS NOT INITIAL ).
+                        maxid = maxid + 1.
+                        cid = maxid.
+                        backsize    = wa_size-backsizeid.
+                        cupsize     = '0'. " no Cup - value in material master data is always 0 (by hard code)
+                        product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                        quantity    = wa_size-a.
+                        wa_item_create = VALUE #(
+                            MatrixUUID = key-MatrixUUID
+                            %target = VALUE #( (
+                                %cid            = cid
+                                ItemID          = cid
+                                MatrixUUID      = wa_matrix-MatrixUUID
+                                Cupsize         = cupsize
+                                Backsize        = backsize
+                                Quantity        = quantity
+                                Model           = model
+                                Color           = color
+                                Product         = product
+                            ) )
+                        ).
+                        APPEND wa_item_create TO it_item_create.
+                    ENDIF.
+                WHEN OTHERS.
+                    IF ( wa_size-a IS NOT INITIAL ).
+                        maxid = maxid + 1.
+                        cid = maxid.
+                        backsize    = wa_size-backsizeid.
+                        cupsize     = 'A'.
+                        product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                        quantity    = wa_size-a.
+                        wa_item_create = VALUE #(
+                            MatrixUUID = key-MatrixUUID
+                            %target = VALUE #( (
+                                %cid            = cid
+                                ItemID          = cid
+                                MatrixUUID      = wa_matrix-MatrixUUID
+                                Cupsize         = cupsize
+                                Backsize        = backsize
+                                Quantity        = quantity
+                                Model           = model
+                                Color           = color
+                                Product         = product
+                            ) )
+                        ).
+                        APPEND wa_item_create TO it_item_create.
+                    ENDIF.
+                    IF ( wa_size-b IS NOT INITIAL ).
+                        maxid = maxid + 1.
+                        cid = maxid.
+                        backsize    = wa_size-backsizeid.
+                        cupsize     = 'B'.
+                        quantity    = wa_size-b.
+                        product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                        wa_item_create = VALUE #(
+                            MatrixUUID = key-MatrixUUID
+                            %target = VALUE #( (
+                                %cid            = cid
+                                ItemID          = cid
+                                MatrixUUID      = wa_matrix-MatrixUUID
+                                Cupsize         = cupsize
+                                Backsize        = backsize
+                                Quantity        = quantity
+                                Model           = model
+                                Color           = color
+                                Product         = product
+                            ) )
+                        ).
+                        APPEND wa_item_create TO it_item_create.
+                    ENDIF.
+                    IF ( wa_size-c IS NOT INITIAL ).
+                        maxid = maxid + 1.
+                        cid = maxid.
+                        backsize    = wa_size-backsizeid.
+                        cupsize     = 'C'.
+                        quantity    = wa_size-c.
+                        product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                        wa_item_create = VALUE #(
+                            MatrixUUID = key-MatrixUUID
+                            %target = VALUE #( (
+                                %cid            = cid
+                                ItemID          = cid
+                                MatrixUUID      = wa_matrix-MatrixUUID
+                                Cupsize         = cupsize
+                                Backsize        = backsize
+                                Quantity        = quantity
+                                Model           = model
+                                Color           = color
+                                Product         = product
+                            ) )
+                        ).
+                        APPEND wa_item_create TO it_item_create.
+                    ENDIF.
+                    IF ( wa_size-d IS NOT INITIAL ).
+                        maxid = maxid + 1.
+                        cid = maxid.
+                        backsize    = wa_size-backsizeid.
+                        cupsize     = 'D'.
+                        quantity    = wa_size-d.
+                        product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                        wa_item_create = VALUE #(
+                            MatrixUUID = key-MatrixUUID
+                            %target = VALUE #( (
+                                %cid            = cid
+                                ItemID          = cid
+                                MatrixUUID      = wa_matrix-MatrixUUID
+                                Cupsize         = cupsize
+                                Backsize        = backsize
+                                Quantity        = quantity
+                                Model           = model
+                                Color           = color
+                                Product         = product
+                            ) )
+                        ).
+                        APPEND wa_item_create TO it_item_create.
+                    ENDIF.
+                    IF ( wa_size-e IS NOT INITIAL ).
+                        maxid = maxid + 1.
+                        cid = maxid.
+                        backsize    = wa_size-backsizeid.
+                        cupsize     = 'E'.
+                        quantity    = wa_size-e.
+                        product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                        wa_item_create = VALUE #(
+                            MatrixUUID = key-MatrixUUID
+                            %target = VALUE #( (
+                                %cid            = cid
+                                ItemID          = cid
+                                MatrixUUID      = wa_matrix-MatrixUUID
+                                Cupsize         = cupsize
+                                Backsize        = backsize
+                                Quantity        = quantity
+                                Model           = model
+                                Color           = color
+                                Product         = product
+                            ) )
+                        ).
+                        APPEND wa_item_create TO it_item_create.
+                    ENDIF.
+                    IF ( wa_size-f IS NOT INITIAL ).
+                        maxid = maxid + 1.
+                        cid = maxid.
+                        backsize    = wa_size-backsizeid.
+                        cupsize     = 'F'.
+                        quantity    = wa_size-f.
+                        product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                        wa_item_create = VALUE #(
+                            MatrixUUID = key-MatrixUUID
+                            %target = VALUE #( (
+                                %cid            = cid
+                                ItemID          = cid
+                                MatrixUUID      = wa_matrix-MatrixUUID
+                                Cupsize         = cupsize
+                                Backsize        = backsize
+                                Quantity        = quantity
+                                Model           = model
+                                Color           = color
+                                Product         = product
+                            ) )
+                        ).
+                        APPEND wa_item_create TO it_item_create.
+                    ENDIF.
+                    IF ( wa_size-g IS NOT INITIAL ).
+                        maxid = maxid + 1.
+                        cid = maxid.
+                        backsize    = wa_size-backsizeid.
+                        cupsize     = 'G'.
+                        quantity    = wa_size-g.
+                        product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                        wa_item_create = VALUE #(
+                            MatrixUUID = key-MatrixUUID
+                            %target = VALUE #( (
+                                %cid            = cid
+                                ItemID          = cid
+                                MatrixUUID      = wa_matrix-MatrixUUID
+                                Cupsize         = cupsize
+                                Backsize        = backsize
+                                Quantity        = quantity
+                                Model           = model
+                                Color           = color
+                                Product         = product
+                            ) )
+                        ).
+                        APPEND wa_item_create TO it_item_create.
+                    ENDIF.
+                    IF ( wa_size-h IS NOT INITIAL ).
+                        maxid = maxid + 1.
+                        cid = maxid.
+                        backsize    = wa_size-backsizeid.
+                        cupsize     = 'H'.
+                        quantity    = wa_size-h.
+                        product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                        wa_item_create = VALUE #(
+                            MatrixUUID = key-MatrixUUID
+                            %target = VALUE #( (
+                                %cid            = cid
+                                ItemID          = cid
+                                MatrixUUID      = wa_matrix-MatrixUUID
+                                Cupsize         = cupsize
+                                Backsize        = backsize
+                                Quantity        = quantity
+                                Model           = model
+                                Color           = color
+                                Product         = product
+                            ) )
+                        ).
+                        APPEND wa_item_create TO it_item_create.
+                    ENDIF.
+                    IF ( wa_size-i IS NOT INITIAL ).
+                        maxid = maxid + 1.
+                        cid = maxid.
+                        backsize    = wa_size-backsizeid.
+                        cupsize     = 'I'.
+                        quantity    = wa_size-i.
+                        product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                        wa_item_create = VALUE #(
+                            MatrixUUID = key-MatrixUUID
+                            %target = VALUE #( (
+                                %cid            = cid
+                                ItemID          = cid
+                                MatrixUUID      = wa_matrix-MatrixUUID
+                                Cupsize         = cupsize
+                                Backsize        = backsize
+                                Quantity        = quantity
+                                Model           = model
+                                Color           = color
+                                Product         = product
+                            ) )
+                        ).
+                        APPEND wa_item_create TO it_item_create.
+                    ENDIF.
+                    IF ( wa_size-j IS NOT INITIAL ).
+                        maxid = maxid + 1.
+                        cid = maxid.
+                        backsize    = wa_size-backsizeid.
+                        cupsize     = 'J'.
+                        quantity    = wa_size-j.
+                        product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                        wa_item_create = VALUE #(
+                            MatrixUUID = key-MatrixUUID
+                            %target = VALUE #( (
+                                %cid            = cid
+                                ItemID          = cid
+                                MatrixUUID      = wa_matrix-MatrixUUID
+                                Cupsize         = cupsize
+                                Backsize        = backsize
+                                Quantity        = quantity
+                                Model           = model
+                                Color           = color
+                                Product         = product
+                            ) )
+                        ).
+                        APPEND wa_item_create TO it_item_create.
+                    ENDIF.
+                    IF ( wa_size-k IS NOT INITIAL ).
+                        maxid = maxid + 1.
+                        cid = maxid.
+                        backsize    = wa_size-backsizeid.
+                        cupsize     = 'K'.
+                        quantity    = wa_size-k.
+                        product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                        wa_item_create = VALUE #(
+                            MatrixUUID = key-MatrixUUID
+                            %target = VALUE #( (
+                                %cid            = cid
+                                ItemID          = cid
+                                MatrixUUID      = wa_matrix-MatrixUUID
+                                Cupsize         = cupsize
+                                Backsize        = backsize
+                                Quantity        = quantity
+                                Model           = model
+                                Color           = color
+                                Product         = product
+                            ) )
+                        ).
+                        APPEND wa_item_create TO it_item_create.
+                    ENDIF.
+
+            ENDCASE.
 
             " Create New Items
             MODIFY ENTITY IN LOCAL MODE zi_matrix_005
@@ -867,7 +960,9 @@ CLASS lhc_matrix IMPLEMENTATION.
 
   ENDMETHOD. " Activate
 
-  METHOD on_model. " on saving changed model/color
+  METHOD on_modelcolor. " on saving changed model/color
+
+    RETURN.
 
     DATA it_size_create TYPE TABLE FOR CREATE zi_matrix_005\_Size. " Size
 
@@ -940,8 +1035,8 @@ CLASS lhc_matrix IMPLEMENTATION.
 *       Read Matrix Draft
         SELECT SINGLE * FROM zmatrix_005d WHERE ( matrixuuid = @key-MatrixUUID ) INTO @DATA(wa_matrix_draft).
 
-        wa_matrix_draft-model = <entity>-Model.
-        wa_matrix_draft-color = <entity>-Color.
+        wa_matrix_draft-model           = <entity>-Model.
+        wa_matrix_draft-color           = <entity>-Color.
 
         IF ( ( wa_matrix-model = wa_matrix_draft-model ) AND ( wa_matrix-color = wa_matrix_draft-color ) ). " No Model/Color change
             RETURN.
@@ -1053,6 +1148,176 @@ CLASS lhc_matrix IMPLEMENTATION.
 
     ENDLOOP.
 
-  ENDMETHOD. " on_model
+  ENDMETHOD. " on_modelcolor
+
+  METHOD on_matrixtypeid. " on matrixtype/country
+
+    DATA it_size_create TYPE TABLE FOR CREATE zi_matrix_005\_Size. " Size
+
+    LOOP AT keys INTO DATA(key).
+
+*        APPEND VALUE #( %key = key-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-success text = 'Event On Model.' ) ) TO reported-matrix.
+
+        DATA v_matrixtypeid TYPE string VALUE ''.
+        DATA v_country      TYPE string VALUE ''.
+        DATA v_update       TYPE string VALUE ''.
+
+       " Read transfered instances
+        READ ENTITIES OF zi_matrix_005  IN LOCAL MODE
+            ENTITY Matrix
+            FIELDS ( MatrixTypeID Country )
+            WITH CORRESPONDING #( keys )
+            RESULT DATA(entities).
+
+        " Read and set Model, Color
+        LOOP AT entities ASSIGNING FIELD-SYMBOL(<entity>).
+            v_matrixtypeid  = <entity>-MatrixTypeID.
+            v_country       = <entity>-Country.
+        ENDLOOP.
+
+*       (Re)Create Size Table according to Matrix Type :
+
+*       Read Actual Matrix
+        SELECT SINGLE * FROM zmatrix_005  WHERE ( matrixuuid = @key-MatrixUUID ) INTO @DATA(wa_matrix).
+
+*       Read Matrix Draft
+        SELECT SINGLE * FROM zmatrix_005d WHERE ( matrixuuid = @key-MatrixUUID ) INTO @DATA(wa_matrix_draft).
+
+        wa_matrix_draft-matrixtypeid    = v_matrixtypeid.
+        wa_matrix_draft-country         = v_country.
+
+        IF ( ( wa_matrix-matrixtypeid = wa_matrix_draft-matrixtypeid ) AND ( wa_matrix-country = wa_matrix_draft-country ) ). " No Matrix Type change
+            RETURN.
+        ENDIF.
+
+*       Read Actual Size Table
+        READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+            ENTITY Matrix
+            BY \_Size
+            ALL FIELDS WITH VALUE #( ( MatrixUUID = key-MatrixUUID ) )
+            RESULT DATA(lt_size)
+            FAILED DATA(ls_read_failed)
+            REPORTED DATA(ls_read_reported).
+
+        SORT lt_size STABLE BY SizeID.
+
+*       Delete Actual Size Table
+        LOOP AT lt_size INTO DATA(ls_size).
+            MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+                ENTITY Size
+                DELETE FROM VALUE #( ( MatrixUUID = key-MatrixUUID SizeID = ls_size-SizeID ) )
+                FAILED DATA(ls_delete_failed)
+                MAPPED DATA(ls_delete_mapped)
+                REPORTED DATA(ls_delete_reported).
+        ENDLOOP.
+
+*       Populate Size table according to Matrix Type and Country
+
+*       Read Matrix Type
+        SELECT SINGLE * FROM zi_matrixtype_005 WHERE ( matrixtypeid = @wa_matrix_draft-matrixtypeid ) INTO @DATA(wa_matrixtype).
+
+*       Read Matrix Type Table
+        READ ENTITIES OF zi_matrixtype_005 " IN LOCAL MODE
+            ENTITY MatrixType
+            BY \_BackSize
+            ALL FIELDS WITH VALUE #( ( MatrixTypeUUID = wa_matrixtype-matrixtypeuuid ) )
+            RESULT DATA(lt_backsize)
+            BY \_CupSize
+            ALL FIELDS WITH VALUE #( ( MatrixTypeUUID = wa_matrixtype-matrixtypeuuid ) )
+            RESULT DATA(lt_cupsize)
+            FAILED DATA(ls_matrixtype_failed)
+            REPORTED DATA(ls_matrixtype_reported).
+
+        SORT lt_backsize STABLE BY Sort BackSizeID.
+        SORT lt_cupsize STABLE BY Sort CupSizeID.
+
+        DATA tabix TYPE sy-tabix.
+        LOOP AT lt_backsize INTO DATA(ls_backsize).
+            tabix = sy-tabix.
+
+            CASE wa_matrix_draft-country.
+                WHEN 'FR'.
+                    APPEND VALUE #( MatrixUUID = key-MatrixUUID %target = VALUE #( (
+                        MatrixUUID = wa_matrix_draft-MatrixUUID SizeID = tabix Back = ls_backsize-BackSizeFR BackSizeID = ls_backsize-BackSizeID ) ) ) TO it_size_create.
+                WHEN 'US'.
+                    APPEND VALUE #( MatrixUUID = key-MatrixUUID %target = VALUE #( (
+                        MatrixUUID = wa_matrix_draft-MatrixUUID SizeID = tabix Back = ls_backsize-BackSizeUS BackSizeID = ls_backsize-BackSizeID ) ) ) TO it_size_create.
+                WHEN 'GB'.
+                    APPEND VALUE #( MatrixUUID = key-MatrixUUID %target = VALUE #( (
+                        MatrixUUID = wa_matrix_draft-MatrixUUID SizeID = tabix Back = ls_backsize-BackSizeGB BackSizeID = ls_backsize-BackSizeID ) ) ) TO it_size_create.
+                WHEN OTHERS.
+                    APPEND VALUE #( MatrixUUID = key-MatrixUUID %target = VALUE #( (
+                        MatrixUUID = wa_matrix_draft-MatrixUUID SizeID = tabix Back = ls_backsize-BackSizeID BackSizeID = ls_backsize-BackSizeID ) ) ) TO it_size_create.
+            ENDCASE.
+            LOOP AT lt_cupsize INTO DATA(ls_cupsize).
+            ENDLOOP.
+        ENDLOOP.
+
+*       Restore Size Table values from Item Table :
+
+*       Read Actual Item Table
+        SELECT * FROM zitem_005  WHERE ( matrixuuid = @key-MatrixUUID ) INTO TABLE @DATA(it_item).
+
+*       Read Item Table Draft
+        SELECT * FROM zitem_005d WHERE ( matrixuuid = @key-MatrixUUID ) INTO TABLE @DATA(it_item_draft).
+
+        LOOP AT it_item_draft INTO DATA(wa_item_draft) WHERE ( draftentityoperationcode <> 'D' ).
+            SPLIT wa_item_draft-product AT '-' INTO DATA(model) DATA(color) DATA(cupsize) DATA(backsize).
+            IF ( ( model = wa_matrix_draft-model ) AND ( color = wa_matrix_draft-color ) ).
+                DATA(quantity) = wa_item_draft-quantity.
+                LOOP AT it_size_create INTO DATA(wa_size_create).
+                    DATA(tabix1) = sy-tabix.
+                    LOOP AT wa_size_create-%target INTO DATA(target).
+                        DATA(tabix2) = sy-tabix.
+                        IF ( backsize = target-Back ).
+                            CASE cupsize.
+                                WHEN 'A'. target-a = quantity.
+                                WHEN 'B'. target-b = quantity.
+                                WHEN 'C'. target-c = quantity.
+                                WHEN 'D'. target-d = quantity.
+                                WHEN 'E'. target-e = quantity.
+                                WHEN 'F'. target-f = quantity.
+                                WHEN 'G'. target-g = quantity.
+                                WHEN 'H'. target-h = quantity.
+                                WHEN 'I'. target-i = quantity.
+                                WHEN 'J'. target-j = quantity.
+                                WHEN 'K'. target-k = quantity.
+                            ENDCASE.
+                        ENDIF.
+                        MODIFY wa_size_create-%target FROM target INDEX tabix2.
+                    ENDLOOP.
+                    MODIFY it_size_create FROM wa_size_create INDEX tabix1.
+                ENDLOOP.
+            ENDIF.
+        ENDLOOP.
+
+        " (Re)Create Actual Size Table
+        MODIFY ENTITY IN LOCAL MODE zi_matrix_005
+          CREATE BY \_Size AUTO FILL CID
+          FIELDS ( MatrixUUID SizeID Back a b c d e f g h i j k BackSizeID )
+          WITH it_size_create
+          FAILED DATA(it_size_failed)
+          MAPPED DATA(it_size_mapped)
+          REPORTED DATA(it_size_reported).
+
+*       Populate Size table according to Matrix Type
+
+
+    ENDLOOP.
+
+  ENDMETHOD. " on_matrixtypeid/country
+
+  METHOD check_atp.
+
+    LOOP AT keys INTO DATA(key).
+        IF ( key-%is_draft = '00' ). " Saved
+           APPEND VALUE #( %key = key-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'ATP check - not yet implemented (saved mode).' ) ) TO reported-matrix.
+        ENDIF.
+        IF ( key-%is_draft = '01' ). " Draft
+           APPEND VALUE #( %key = key-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'ATP check - not yet implemented (draft mode).' ) ) TO reported-matrix.
+        ENDIF.
+    ENDLOOP.
+
+  ENDMETHOD. " check_atp
 
 ENDCLASS. " lhc_matrix IMPLEMENTATION.

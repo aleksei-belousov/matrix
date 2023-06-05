@@ -3,10 +3,14 @@
 @Metadata.allowExtensions: true
 define view entity ZC_BACKSIZE_005 as projection on ZI_BACKSIZE_005 as Backsize
 {
-    key BacksizeUUID,
-    MatrixtypeUUID,
+    key BackSizeUUID,
+    MatrixTypeUUID,
     BackSizeID,
     Description,
+    BackSizeFR,
+    BackSizeUS,
+    BackSizeGB,
+    Sort,
     CreatedBy,
     CreatedAt,
     LastChangedBy,

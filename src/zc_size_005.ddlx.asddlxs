@@ -21,8 +21,8 @@ annotate entity ZC_SIZE_005 with
     //        identification: [ { position: 10, label: 'Size ID' } ] }
     //SizeID;
 
-    @UI: {  lineItem:       [ { position: 10, label: 'Backsize / Cupsize', cssDefault.width: '250px' } ],
-            identification: [ { position: 10, label: 'Backsize' } ] }
+    @UI: {  lineItem:       [ { position: 10, label: 'Back / Cup', cssDefault.width: '250px' } ],
+            identification: [ { position: 10, label: 'Back' } ] }
     Back;
 
     @UI: {  lineItem:       [ { position: 20, label: 'A', cssDefault.width: '150px' } ],
@@ -60,5 +60,17 @@ annotate entity ZC_SIZE_005 with
     @UI: {  lineItem:       [ { position: 100, label: 'I', cssDefault.width: '150px' } ],
             identification: [ { position: 100, label: 'I' } ] }
     I;
+
+    @UI: {  lineItem:       [ { position: 110, label: 'H', cssDefault.width: '150px' } ],
+            identification: [ { position: 110, label: 'H' } ] }
+    J;
+
+    @UI: {  lineItem:       [ { position: 120, label: 'K', cssDefault.width: '150px' } ],
+            identification: [ { position: 120, label: 'K' } ] }
+    K;
+
+    @UI: {  lineItem:       [ { position: 10, label: 'Backsize ID', cssDefault.width: '250px' } ],
+            identification: [ { position: 10, label: 'Backsize ID' } ] }
+    BackSizeID;
 
 }

@@ -7,6 +7,7 @@ association to parent ZI_MATRIXTYPE_005 as _MatrixType on $projection.MatrixType
     matrixtypeuuid as MatrixTypeUUID,
     cupsizeid as CupSizeID,
     description as Description,
+    sort as Sort,
     createdby as CreatedBy,
     createdat as CreatedAt,
     lastchangedby as LastChangedBy,

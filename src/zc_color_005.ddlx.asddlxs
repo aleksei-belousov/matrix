@@ -8,13 +8,24 @@
 annotate entity ZC_COLOR_005 with 
 {
 
+    @UI.facet: [ { id:          'Color',
+                   purpose:     #STANDARD,
+                   type:        #IDENTIFICATION_REFERENCE,
+                   label:       'Color',
+                   position:    10 }]
+
     @UI.hidden: true
     ColorUUID;
 
-  @UI: {  lineItem:       [ { position: 30, label: 'Model ID', cssDefault.width: '300px' } ],
-          identification: [ { position: 30, label: 'Model ID', cssDefault.width: '300px' } ],
+  @UI: {  lineItem:       [ { position: 30, label: 'Color ID', cssDefault.width: '300px' } ],
+          identification: [ { position: 30, label: 'Color ID', cssDefault.width: '300px' } ],
           selectionField: [ { position: 30 } ] }
     ColorID;
+
+    @UI: {  lineItem:       [ { position: 40, label: 'Description', cssDefault.width: '300px' } ],
+            identification: [ { position: 40, label: 'Description', cssDefault.width: '300px' } ],
+            selectionField: [ { position: 40 } ] }
+    Description;
 
     @UI.hidden: true
     CreatedBy;

@@ -19,14 +19,6 @@ define behavior for ZC_MATRIXTYPE_005 alias MatrixType
   use association _CupSize { create; with draft; }
 }
 
-//define behavior for ZC_TYPESIZE_005 alias TypeSize
-//{
-//  use update;
-//  use delete;
-//
-//  use association _MatrixType { with draft; }
-//}
-
 define behavior for ZC_BACKSIZE_005 alias BackSize
 {
   use update;

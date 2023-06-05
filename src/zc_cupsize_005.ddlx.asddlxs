@@ -32,4 +32,8 @@ annotate entity ZC_CUPSIZE_005 with
             identification: [ { position: 40, label: 'Description' } ] }
     Description;
     
+    @UI: {  lineItem:       [ { position: 50, label: 'Sort', cssDefault.width: '250px' } ],
+            identification: [ { position: 50, label: 'Sort' } ] }
+    Sort;
+
 }

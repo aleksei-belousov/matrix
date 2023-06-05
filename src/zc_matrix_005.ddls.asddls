@@ -19,14 +19,16 @@ define root view entity ZC_MATRIX_005 provider contract transactional_query as p
     Model,
     @Consumption.valueHelpDefinition: [ { entity: { name: 'ZC_COLOR_005', element: 'ColorID' } } ]
     Color,
+    @Consumption.valueHelpDefinition: [ { entity: { name: 'ZC_MATRIXTYPE_005', element: 'MatrixTypeID' } } ]
+    MatrixTypeID,
+    @Consumption.valueHelpDefinition: [ { entity: { name: 'ZC_COUNTRY_005', element: 'CountryID' } } ]
+    Country,
     PurchaseOrderByCustomer,
     CreationDate,
     CreationTime,
     SalesOrderID,
     SalesOrderURL,
     CustomerURL,
-    @Consumption.valueHelpDefinition: [ { entity: { name: 'ZC_MATRIXTYPE_005', element: 'MatrixTypeID' } } ]
-    MatrixTypeID,
     CreatedBy,
     CreatedAt,
     LastChangedBy,

@@ -38,6 +38,7 @@ annotate entity ZC_MATRIX_005 with
     @UI: {  lineItem:       [ { position: 30, label: 'Sales Order ID', type: #WITH_URL, url: 'SalesOrderURL' } ],
             identification: [ { position: 30, label: 'Sales Order ID', cssDefault.width: '300px', type: #WITH_URL, url: 'SalesOrderURL' },
                             /*{ type: #FOR_ACTION, dataAction: 'create_items',        label: 'Create Items' },*/
+                              { type: #FOR_ACTION, dataAction: 'check_atp',  label: 'Check ATP' },
                               { type: #FOR_ACTION, dataAction: 'create_sales_order',  label: 'Create Sales Order' },
                               { type: #FOR_ACTION, dataAction: 'update_sales_order',  label: 'Update Sales Order' },
                               { type: #FOR_ACTION, dataAction: 'get_sales_order',     label: 'Get Sales Order' } ],
@@ -79,23 +80,28 @@ annotate entity ZC_MATRIX_005 with
             selectionField: [ { position: 100 } ] }
     Color;
 
-    @UI: {  lineItem:       [ { position: 110, label: 'Customer Reference', cssDefault.width: '300px' } ],
-            identification: [ { position: 110, label: 'Customer Reference', cssDefault.width: '300px' } ],
+    @UI: {  lineItem:       [ { position: 110, label: 'Matrix Type ID', cssDefault.width: '200px' } ],
+            identification: [ { position: 110, label: 'Matrix Type ID', cssDefault.width: '200px' } ],
             selectionField: [ { position: 110 } ] }
-    PurchaseOrderByCustomer;
-
-    @UI: {  lineItem:       [ { position: 120, label: 'Matrix Type ID', cssDefault.width: '200px' } ],
-            identification: [ { position: 120, label: 'Matrix Type ID', cssDefault.width: '200px' } ],
-            selectionField: [ { position: 120 } ] }
     MatrixTypeID;
 
-    @UI: {  lineItem:       [ { position: 130, label: 'Sales Order URL', cssDefault.width: '300px' } ],
-            identification: [ { position: 130, label: 'Sales Order URL', cssDefault.width: '300px' } ] }
+    @UI: {  lineItem:       [ { position: 120, label: 'Country', cssDefault.width: '100px' } ],
+            identification: [ { position: 120, label: 'Country', cssDefault.width: '100px' } ],
+            selectionField: [ { position: 120 } ] }
+    Country;
+
+    @UI: {  lineItem:       [ { position: 130, label: 'Customer Reference', cssDefault.width: '300px' } ],
+            identification: [ { position: 130, label: 'Customer Reference', cssDefault.width: '300px' } ],
+            selectionField: [ { position: 130 } ] }
+    PurchaseOrderByCustomer;
+
+    @UI: {  lineItem:       [ { position: 140, label: 'Sales Order URL', cssDefault.width: '300px' } ],
+            identification: [ { position: 140, label: 'Sales Order URL', cssDefault.width: '300px' } ] }
     @UI.hidden: true
     SalesOrderURL;
 
-    @UI: {  lineItem:       [ { position: 140, label: 'Customer URL', cssDefault.width: '300px' } ],
-            identification: [ { position: 140, label: 'Customer URL', cssDefault.width: '300px' } ] }
+    @UI: {  lineItem:       [ { position: 150, label: 'Customer URL', cssDefault.width: '300px' } ],
+            identification: [ { position: 150, label: 'Customer URL', cssDefault.width: '300px' } ] }
     @UI.hidden: true
     CustomerURL;
 

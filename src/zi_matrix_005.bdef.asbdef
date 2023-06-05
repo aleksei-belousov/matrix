@@ -15,14 +15,15 @@ etag master LocalLastChangedAt
   delete;
 
   // Actions:
+  action check_atp;
   //action create_items;
   action create_sales_order;
   action get_sales_order;
   action update_sales_order;
   // Events:
   determination on_create on modify { field MatrixUUID; }
-  determination on_model on save { field Model, Color; }
-  //determination on_modify on modify { field Model, Color; }
+  determination on_modelcolor on save { field Model, Color; }
+  determination on_matrixtypeid on save { field MatrixTypeID, Country; }
 
   association _Size { create ( features : instance, authorization : update ); with draft; }
   association _Item { create ( features : instance, authorization : update ); with draft; }
@@ -52,6 +53,8 @@ etag master LocalLastChangedAt
     DistributionChannel     = distributionchannel;
     Model                   = model;
     Color                   = color;
+    MatrixTypeID            = matrixtypeid;
+    Country                 = country;
     PurchaseOrderByCustomer = purchaseorderbycustomer;
     SalesOrderURL           = salesorderurl;
     CustomerURL             = customerurl;
@@ -71,6 +74,8 @@ etag master LocalLastChangedAt
     //action create_sales_order affects messages;
     field Model affects entity _Size;
     field Color affects entity _Size;
+    field MatrixTypeID affects entity _Size;
+    field Country affects entity _Size;
     action get_sales_order affects field SalesOrderID, field SalesOrderURL, entity _Item;
   }
 
@@ -90,6 +95,7 @@ etag master LocalLastChangedAt
   field ( readonly ) MatrixUUID;
   field ( readonly ) SizeID;
   field ( readonly ) Back;
+  field ( readonly ) BackSizeID;
   field ( readonly ) LocalLastChangedAt;
 
   association _Matrix { with draft; }

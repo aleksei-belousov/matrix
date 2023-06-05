@@ -31,26 +31,6 @@ etag master LocalLastChangedAt
 
 }
 
-//define behavior for ZI_TYPESIZE_005 alias TypeSize
-//implementation in class zbp_i_typesize_005 unique
-//persistent table ztypesize_005
-//draft table ztypesize_005d
-//lock dependent by _MatrixType
-//authorization dependent by _MatrixType
-//etag master LocalLastChangedAt
-//{
-//  update;
-//  delete;
-//
-//  field ( numbering : managed, readonly ) TypeSizeUUID;
-//  field ( readonly ) MatrixTypeUUID;
-////  field ( readonly ) Back;
-//  field ( readonly ) LocalLastChangedAt;
-//
-//  association _MatrixType { with draft; }
-//
-//}
-
 define behavior for ZI_BACKSIZE_005 alias BackSize
 implementation in class zbp_i_backsize_005 unique
 persistent table zbacksize_005

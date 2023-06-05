@@ -4,6 +4,7 @@ define root view entity ZI_MODEL_005 as select from zmodel_005 as Model
 {
     key modeluuid as ModelUUID,
     modelid as ModelID,
+    description as Description,
     createdby as CreatedBy,
     createdat as CreatedAt,
     lastchangedby as LastChangedBy,

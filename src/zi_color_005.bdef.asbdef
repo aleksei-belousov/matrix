@@ -25,4 +25,15 @@ etag master LocalLastChangedAt
     //determination on_prepare;
   }
 
+  mapping for ZCOLOR_005
+  {
+    ColorUUID               = coloruuid;
+    ColorID                 = colorid;
+    Description             = description;
+    CreatedBy               = createdby;
+    CreatedAt               = createdat;
+    LastChangedAt           = lastchangedat;
+    LastChangedBy           = lastchangedby;
+    LocalLastChangedAt      = locallastchangedat;
+  }
 }

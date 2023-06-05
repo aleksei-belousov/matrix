@@ -20,6 +20,7 @@ composition [0..*] of ZI_ITEM_005 as _Item
     salesorderurl as SalesOrderURL,
     customerurl as CustomerURL,
     matrixtypeid as MatrixTypeID,
+    country as Country,
     createdby as CreatedBy,
     createdat as CreatedAt,
     lastchangedby as LastChangedBy,
