@@ -1,7 +1,7 @@
 @AccessControl.authorizationCheck: #NOT_REQUIRED
 @EndUserText.label: 'Size'
 define view entity ZI_SIZE_005 as select from zsize_005 as Size
-association to parent ZI_MATRIX_005 as _Matrix on $projection.MatrixUUID = _Matrix.MatrixUUID 
+association to parent ZI_MATRIX_005 as _Matrix on $projection.MatrixUUID = _Matrix.MatrixUUID
 {
     key matrixuuid as MatrixUUID,
     key sizeid as SizeID,
@@ -17,7 +17,6 @@ association to parent ZI_MATRIX_005 as _Matrix on $projection.MatrixUUID = _Matr
     i as I,
     j as J,
     k as K,
-    l as L,
     backsizeid as BackSizeID, 
     createdby as CreatedBy,
     createdat as CreatedAt,

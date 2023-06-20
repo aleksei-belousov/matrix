@@ -11,8 +11,6 @@ define view entity ZC_ITEM_005 as projection on ZI_ITEM_005 as Item
     Backsize,
     Product,
     Quantity,
-    MatrixTypeID,
-    Country,
     Createdby,
     Createdat,
     LastChangedBy,

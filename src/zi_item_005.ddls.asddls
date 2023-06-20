@@ -11,8 +11,6 @@ association to parent ZI_MATRIX_005 as _Matrix on $projection.MatrixUUID = _Matr
     backsize as Backsize,
     product as Product,
     quantity as Quantity,
-    matrixtypeid as MatrixTypeID,
-    country as Country,
     createdby as Createdby,
     createdat as Createdat,
     lastchangedby as LastChangedBy,

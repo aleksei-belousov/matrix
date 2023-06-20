@@ -25,14 +25,11 @@ etag master LocalLastChangedAt
     //determination on_prepare;
   }
 
-  validation check_on_save on save { field ModelID; }
-
   mapping for ZMODEL_005
   {
     ModelUUID               = modeluuid;
     ModelID                 = modelid;
     Description             = description;
-    MatrixTypeID            = matrixtypeid;
     CreatedBy               = createdby;
     CreatedAt               = createdat;
     LastChangedAt           = lastchangedat;
