@@ -1,7 +1,7 @@
-@EndUserText.label: 'ZC_SIZE_005'
+@EndUserText.label: 'ZC_SIZEHEAD_005'
 @AccessControl.authorizationCheck: #NOT_REQUIRED
 @Metadata.allowExtensions: true
-define view entity ZC_SIZE_005 as projection on ZI_SIZE_005 as Size
+define view entity ZC_SIZEHEAD_005 as projection on ZI_SIZEHEAD_005 as Sizehead
 {
     key MatrixUUID,
     key SizeID,
@@ -18,7 +18,7 @@ define view entity ZC_SIZE_005 as projection on ZI_SIZE_005 as Size
     J,
     K,
     L,
-    BackSizeID, 
+    BackSizeID,
     CreatedBy,
     CreatedAt,
     LastChangedBy,

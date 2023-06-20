@@ -27,6 +27,11 @@ annotate entity ZC_MODEL_005 with
             selectionField: [ { position: 40 } ] }
     Description;
 
+    @UI: {  lineItem:       [ { position: 50, label: 'Matrix Type', cssDefault.width: '200px' } ],
+            identification: [ { position: 50, label: 'Matrix Type', cssDefault.width: '200px' } ],
+            selectionField: [ { position: 50 } ] }
+    MatrixTypeID;
+
     @UI.hidden: true
     CreatedBy;
 

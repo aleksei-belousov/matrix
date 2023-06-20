@@ -23,28 +23,36 @@ annotate entity ZC_ITEM_005 with
             identification: [ { position: 40, label: 'Item ID' } ] }
     ItemID;
 
-    @UI: {  lineItem:       [ { position: 50, label: 'Model', cssDefault.width: '300px' } ],
-            identification: [ { position: 50, label: 'Model' } ] }
+    @UI: {  lineItem:       [ { position: 50, label: 'Model', cssDefault.width: '300px' } ]/*,
+            identification: [ { position: 50, label: 'Model' } ]*/ }
     Model;
 
-    @UI: {  lineItem:       [ { position: 60, label: 'Color', cssDefault.width: '300px' } ],
-            identification: [ { position: 60, label: 'Color' } ] }
+    @UI: {  lineItem:       [ { position: 60, label: 'Color', cssDefault.width: '300px' } ]/*,
+            identification: [ { position: 60, label: 'Color' } ]*/ }
     Color;
 
-    @UI: {  lineItem:       [ { position: 70, label: 'Cupsize', cssDefault.width: '300px' } ],
-            identification: [ { position: 70, label: 'Cupsize' } ] }
+    @UI: {  lineItem:       [ { position: 70, label: 'Cupsize', cssDefault.width: '300px' } ]/*,
+            identification: [ { position: 70, label: 'Cupsize' } ]*/ }
     Cupsize;
 
-    @UI: {  lineItem:       [ { position: 80, label: 'Backsize', cssDefault.width: '300px' } ],
-            identification: [ { position: 80, label: 'Backsize' } ] }
+    @UI: {  lineItem:       [ { position: 80, label: 'Backsize', cssDefault.width: '300px' } ]/*,
+            identification: [ { position: 80, label: 'Backsize' } ]*/ }
     Backsize;
 
-    @UI: {  lineItem:       [ { position: 90, label: 'Product', cssDefault.width: '300px' } ],
-            identification: [ { position: 90, label: 'Product' } ] }
+    @UI: {  lineItem:       [ { position: 90, label: 'Product', cssDefault.width: '300px' } ]/*,
+            identification: [ { position: 90, label: 'Product' } ]*/ }
     Product;
 
-    @UI: {  lineItem:       [ { position: 100, label: 'Quantity', cssDefault.width: '300px' } ],
-            identification: [ { position: 100, label: 'Quantity' } ] }
+    @UI: {  lineItem:       [ { position: 100, label: 'Quantity', cssDefault.width: '300px' } ]/*,
+            identification: [ { position: 100, label: 'Quantity' } ]*/ }
     Quantity;
      
+    //@UI: {  lineItem:       [ { position: 110, label: 'Matrix Type', cssDefault.width: '300px' } ]/*,
+    //        identification: [ { position: 110, label: 'Matrix Type' } ]*/ }
+    //MatrixTypeID;
+
+    //@UI: {  lineItem:       [ { position: 120, label: 'Country', cssDefault.width: '300px' } ]/*,
+    //        identification: [ { position: 120, label: 'Country' } ]*/ }
+    //Country;
+
 }
