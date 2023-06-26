@@ -17,6 +17,7 @@ define view entity ZC_SIZE_005 as projection on ZI_SIZE_005 as Size
     I,
     J,
     K,
+    L,
     BackSizeID, 
     CreatedBy,
     CreatedAt,

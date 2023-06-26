@@ -22,15 +22,18 @@ etag master LocalLastChangedAt
   action update_sales_order;
   // Events:
   determination on_create on modify { field MatrixUUID; }
-  determination on_modelcolor on save { field Model, Color; }
-  determination on_matrixtypeid on save { field MatrixTypeID, Country; }
+  determination on_model_modify on modify { field Model; }
+  determination on_scheme_save on save { field Model, Color, MatrixTypeID, Country; }
 
+  association _Sizehead { create ( features : instance, authorization : update ); with draft; }
   association _Size { create ( features : instance, authorization : update ); with draft; }
   association _Item { create ( features : instance, authorization : update ); with draft; }
 
   field ( numbering : managed, readonly ) MatrixUUID;
   field ( readonly ) MatrixID;
   field ( readonly ) SalesOrderID;
+  field ( readonly ) MatrixTypeID;
+  field ( readonly ) ModelRef;
 
   draft action Resume with additional implementation;
   draft action Edit with additional implementation;
@@ -58,6 +61,31 @@ etag master LocalLastChangedAt
     PurchaseOrderByCustomer = purchaseorderbycustomer;
     SalesOrderURL           = salesorderurl;
     CustomerURL             = customerurl;
+    ModelRef                = modelref;
+    ModelRefURL             = modelrefurl;
+    Hidden00                = hidden00;
+    Hidden01                = hidden01;
+    Hidden02                = hidden02;
+    Hidden03                = hidden03;
+    Hidden04                = hidden04;
+    Hidden05                = hidden05;
+    Hidden06                = hidden06;
+    Hidden07                = hidden07;
+    Hidden08                = hidden08;
+    Hidden09                = hidden09;
+    Hidden10                = hidden10;
+    Hidden11                = hidden11;
+    Hidden12                = hidden12;
+    Hidden13                = hidden13;
+    Hidden14                = hidden14;
+    Hidden15                = hidden15;
+    Hidden16                = hidden16;
+    Hidden17                = hidden17;
+    Hidden18                = hidden18;
+    Hidden19                = hidden19;
+    Hidden20                = hidden20;
+    Hidden21                = hidden21;
+    Criticality01           = criticality01;
     CreationDate            = creationdate;
     CreationTime            = creationtime;
     CreatedBy               = createdby;
@@ -72,13 +100,33 @@ etag master LocalLastChangedAt
     //field Data2 affects field Data3;
     //action create_items affects entity _Item;
     //action create_sales_order affects messages;
-    field Model affects entity _Size;
+    field Model affects field MatrixTypeID, entity _Size;
     field Color affects entity _Size;
     field MatrixTypeID affects entity _Size;
     field Country affects entity _Size;
-    action get_sales_order affects field SalesOrderID, field SalesOrderURL, entity _Item;
+    action get_sales_order affects field SalesOrderID, field SalesOrderURL, entity _Item, entity _Size;
   }
 
+}
+
+define behavior for ZI_SIZEHEAD_005 alias Sizehead
+implementation in class zbp_i_sizehead_005 unique
+persistent table zsizehead_005
+draft table zsizehead_005d
+lock dependent by _Matrix
+authorization dependent by _Matrix
+etag master LocalLastChangedAt
+{
+  update;
+  delete;
+
+  field ( readonly ) MatrixUUID;
+  field ( readonly ) SizeID;
+  field ( readonly ) Back;
+  field ( readonly ) BackSizeID;
+  field ( readonly ) LocalLastChangedAt;
+
+  association _Matrix { with draft; }
 }
 
 define behavior for ZI_SIZE_005 alias Size
