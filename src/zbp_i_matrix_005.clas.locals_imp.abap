@@ -353,6 +353,7 @@ CLASS lhc_matrix IMPLEMENTATION.
             IF ( sy-subrc <> 0 ).
 
                 APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'Sales Order not created yet.' ) ) TO reported-matrix.
+                RETURN.
 
             ELSE.
 
@@ -591,10 +592,10 @@ CLASS lhc_matrix IMPLEMENTATION.
                     %tky                    = <entity>-%tky
                     MatrixID                = matrixid
                     SalesOrderType          = 'OR'
-                    SalesOrganization       = '1010'
+                    SalesOrganization       = '1000' " '1010'
                     DistributionChannel     = '10'
                     OrganizationDivision    = '00'
-                    SoldToParty             = '0010100014'
+                    SoldToParty             = space " '0010100014'
                     Model                   = space
                     Color                   = space
                     MatrixTypeID            = space

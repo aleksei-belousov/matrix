@@ -1,4 +1,6 @@
 CLASS zbp_i_size_005 DEFINITION PUBLIC ABSTRACT FINAL FOR BEHAVIOR OF zi_matrix_005.
+protected section.
+private section.
 ENDCLASS.
 
 
