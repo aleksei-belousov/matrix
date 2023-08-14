@@ -37,6 +37,21 @@ CLASS lhc_matrix DEFINITION INHERITING FROM cl_abap_behavior_handler.
     METHODS check_atp FOR MODIFY
       IMPORTING keys FOR ACTION matrix~check_atp.
 
+    METHODS on_sales_order_create FOR DETERMINE ON MODIFY
+      IMPORTING keys FOR matrix~on_sales_order_create.
+
+*   For ATP check
+    METHODS get_stock_availability
+      IMPORTING
+        value(i_plant)              TYPE string
+        value(i_product)            TYPE string
+        value(i_quantity)           TYPE string
+      EXPORTING
+        value(o_available_stock)    TYPE string
+        value(o_stock)              TYPE string
+        value(o_availability)       TYPE string
+        value(o_criticality)        TYPE string.
+
 ENDCLASS. " lhc_matrix DEFINITION
 
 CLASS lhc_matrix IMPLEMENTATION.
@@ -133,6 +148,9 @@ CLASS lhc_matrix IMPLEMENTATION.
                 MAPPED DATA(ls_mapped)
                 FAILED DATA(ls_failed)
                 REPORTED DATA(ls_reported).
+
+            "retrieve the created sale order
+            zbp_i_matrix_005=>mapped_sales_order-salesorder = ls_mapped-salesorder.
 
 *           Read Sales Order
             READ ENTITIES OF i_salesordertp
@@ -326,6 +344,7 @@ CLASS lhc_matrix IMPLEMENTATION.
     DATA color        TYPE string VALUE ''.
     DATA backsize     TYPE string VALUE ''.
     DATA cupsize      TYPE string VALUE ''.
+    DATA productURL   TYPE string VALUE ''.
 
     DATA tabix TYPE sy-tabix.
 
@@ -340,43 +359,48 @@ CLASS lhc_matrix IMPLEMENTATION.
 
         IF ( <entity>-%is_draft = '00' ). " Saved
 
-            SELECT SINGLE
-                    *
-                FROM
-                    i_salesordertp
-                WHERE
-                    ( CreationDate = @<entity>-CreationDate ) AND
-                    ( CreationTime = @<entity>-CreationTime )
-                INTO
-                    @DATA(wa_salesordertp).
-
-            IF ( sy-subrc <> 0 ).
-
-                APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'Sales Order not created yet.' ) ) TO reported-matrix.
-                RETURN.
-
-            ELSE.
-
-                DATA(salesOrderURL) = |/ui#SalesOrder-manageV2&/SalesOrderManage('| && condense( val = |{ wa_salesordertp-SalesOrder ALPHA = OUT }| ) && |')|.
-                "DATA(salesOrderURL) = '/ui#SalesDocument-display?sap-ui-tech-hint=GUI&SalesDocument=' && wa_salesordertp-SalesOrder. " old version on VA03
-
-*               Sales Order ID
-                it_matrix_update = VALUE #( (
-                    %tky            = <entity>-%tky
-                    SalesOrderID    = wa_salesordertp-SalesOrder
-                    SalesOrderURL   = salesOrderURL
-                ) ).
-
-*               Update Matrix (Sales Order ID)
-                MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
-                    ENTITY Matrix
-                    UPDATE FIELDS ( SalesOrderID SalesOrderURL )
-                    WITH it_matrix_update
-                    FAILED DATA(it_failed)
-                    MAPPED DATA(it_mapped)
-                    REPORTED DATA(it_reported).
+*            SELECT SINGLE
+*                    *
+*                FROM
+*                    i_salesordertp
+*                WHERE
+*                    ( CreationDate = @<entity>-CreationDate ) AND
+*                    ( CreationTime = @<entity>-CreationTime )
+*                INTO
+*                    @DATA(wa_salesordertp).
+*
+*            IF ( sy-subrc <> 0 ).
+*
+*                APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'Sales Order not created yet.' ) ) TO reported-matrix.
+*                RETURN.
+*
+*            ELSE.
+*
+*                DATA(salesOrderURL) = |/ui#SalesOrder-manageV2&/SalesOrderManage('| && condense( val = |{ wa_salesordertp-SalesOrder ALPHA = OUT }| ) && |')|.
+*                "DATA(salesOrderURL) = '/ui#SalesDocument-display?sap-ui-tech-hint=GUI&SalesDocument=' && wa_salesordertp-SalesOrder. " old version on VA03
+*
+**               Sales Order ID
+*                it_matrix_update = VALUE #( (
+*                    %tky            = <entity>-%tky
+*                    SalesOrderID    = wa_salesordertp-SalesOrder
+*                    SalesOrderURL   = salesOrderURL
+*                ) ).
+*
+**               Update Matrix (Sales Order ID)
+*                MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+*                    ENTITY Matrix
+*                    UPDATE FIELDS ( SalesOrderID SalesOrderURL )
+*                    WITH it_matrix_update
+*                    FAILED DATA(it_failed)
+*                    MAPPED DATA(it_mapped)
+*                    REPORTED DATA(it_reported).
 
 *               Restore Items from Sales Order :
+
+            IF ( <entity>-SalesOrderID IS INITIAL ).
+                APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'Sales Order not created yet.' ) ) TO reported-matrix.
+                RETURN.
+            ELSE.
 
 *               Read Actual Matrix Items
                 READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
@@ -403,7 +427,7 @@ CLASS lhc_matrix IMPLEMENTATION.
                 READ ENTITIES OF i_salesordertp
                     ENTITY SalesOrder
                     BY \_Item
-                    ALL FIELDS WITH VALUE #( ( salesorder = wa_salesordertp-SalesOrder ) )
+                    ALL FIELDS WITH VALUE #( ( salesorder = <entity>-SalesOrderID ) )
                     RESULT DATA(lt_salesorder_item)
                     FAILED DATA(ls_failed_read)
                     REPORTED DATA(ls_reported_read).
@@ -417,6 +441,7 @@ CLASS lhc_matrix IMPLEMENTATION.
                     SPLIT product AT '-' INTO model color cupsize backsize.
                     quantity = round( val  = ls_salesorder_item-RequestedQuantity dec  = 0 ).
                     CONDENSE quantity NO-GAPS.
+                    productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
 
                     APPEND VALUE #(
                         MatrixUUID = <entity>-MatrixUUID
@@ -429,6 +454,7 @@ CLASS lhc_matrix IMPLEMENTATION.
                             Backsize   = backsize
                             Product    = product
                             Quantity   = quantity
+                            ProductURL = productURL
                         ) )
                     ) TO it_item_create.
 
@@ -437,7 +463,7 @@ CLASS lhc_matrix IMPLEMENTATION.
                 MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
                     ENTITY Matrix
                     CREATE BY \_Item
-                    FIELDS ( ItemID Model Color Cupsize Backsize Product Quantity )
+                    FIELDS ( ItemID Model Color Cupsize Backsize Product Quantity ProductURL )
                     WITH it_item_create
                     FAILED DATA(ls_item_failed)
                     MAPPED DATA(ls_item_mapped)
@@ -749,12 +775,18 @@ CLASS lhc_matrix IMPLEMENTATION.
 
     DATA cid TYPE string.
 
-    DATA model      TYPE string.
-    DATA color      TYPE string.
-    DATA cupsize    TYPE string.
-    DATA backsize   TYPE string.
-    DATA product    TYPE string.
-    DATA quantity   TYPE string.
+    DATA plant              TYPE string VALUE '1000'.
+    DATA model              TYPE string.
+    DATA color              TYPE string.
+    DATA cupsize            TYPE string.
+    DATA backsize           TYPE string.
+    DATA product            TYPE string.
+    DATA quantity           TYPE string.
+    DATA stock              TYPE string.
+    DATA available_stock    TYPE string.
+    DATA availability       TYPE string.
+    DATA criticality        TYPE string.
+    DATA productURL         TYPE string.
 
     LOOP AT keys INTO DATA(key).
 
@@ -766,21 +798,39 @@ CLASS lhc_matrix IMPLEMENTATION.
 *       Read Matrix Draft
         SELECT SINGLE * FROM zmatrix_005d WHERE ( matrixuuid = @key-MatrixUUID ) INTO @DATA(wa_matrix_draft).
 
+        plant = wa_matrix_draft-SalesOrganization.
+
 *       Set Customer URL
         DATA(customerURL)   = |/ui#Customer-displayFactSheet?sap-ui-tech-hint=GUI&/C_CustomerOP('| && condense( val = |{ wa_matrix_draft-soldtoparty ALPHA = OUT }| ) && |')|.
+
 *       Set Model Ref URL
         DATA(modelRef)      = |Link|.
-        DATA(modelRefURL)   = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=C%C2%87u%C2%84C%C2%83%C2%84%C2%89C%C2%83xu%C2%88uHC%C2%87u%C2%84C%C2%8E%C2%87vs%C2%81%C2%83xy%C2%80sDDIC%C2%87%C2%86%C2%8AxC%C2%87u%C2%84| &&
-                              |C%C2%8E%C2%87xs%C2%81%C2%83xy%C2%80sDDICDDDEC77nWsacXY%60sDDI777777ngXsacXY%60sDDI77DDDE77ngVsacXY%60sDDI&sap-ui-language=EN&sap-client=080|.
+        DATA(modelRefURL)   = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvsxysDDICxCuCxsxysDDICDDDEC77nWsacXY%60sDDI777777ngXsacXY%60sDDI77DDDE77ngVsacXY%60sDDI&sap-ui-language=EN&sap-client=080|.
+
+*       Set Color Ref URL
+        DATA(colorRef)      = |Link|.
+        DATA(colorRefURL)   = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvswsDDICxCuCxswsDDICDDDEC77nWsWc%60cfsDDI777777ngXsWc%60cfsDDI77DDDE77ngVsWc%60cfsDDI&sap-ui-language=EN&sap-client=080|.
+
+*       Set Country Ref URL
+        DATA(countryRef)    = |Link|.
+        DATA(countryRefURL) = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvswsDDICxCuCxswsDDICDDDEC77nWsWcibhfmsDDI777777ngXsWcibhfmsDDI77DDDE77ngVsWcibhfmsDDI&sap-ui-language=EN&sap-client=080|.
+
+*       Set Sold To Party
+        DATA(soldToParty)   = |{ wa_matrix_draft-SoldToParty ALPHA = IN }|. " '0010100014'
 
         MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
             ENTITY Matrix
-            UPDATE FIELDS ( CustomerURL ModelRef ModelRefURL )
+            UPDATE FIELDS ( CustomerURL ModelRef ModelRefURL ColorRef ColorRefURL CountryRef CountryRefURL SoldToParty )
             WITH VALUE #( (
-                %key        = key-%key
-                CustomerURL = customerURL
-                ModelRef    = modelRef
-                ModelRefURL = modelRefURL
+                %key          = key-%key
+                CustomerURL   = customerURL
+                ModelRef      = modelRef
+                ModelRefURL   = modelRefURL
+                ColorRef      = colorRef
+                ColorRefURL   = colorRefURL
+                CountryRef    = countryRef
+                CountryRefURL = countryRefURL
+                SoldToParty   = soldToParty
             ) ).
 
 
@@ -844,6 +894,14 @@ CLASS lhc_matrix IMPLEMENTATION.
                 cupsize     = wa_size-backsizeid.
                 product     = model && '-' && color && '-' && cupsize && '-' && backsize.
                 quantity    = wa_size-a.
+                get_stock_availability( EXPORTING i_plant           = plant
+                                                  i_product         = product
+                                                  i_quantity        = quantity
+                                        IMPORTING o_stock           = stock
+                                                  o_available_stock = available_stock
+                                                  o_availability    = availability
+                                                  o_criticality     = criticality ).
+                productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
                 wa_item_create = VALUE #(
                     MatrixUUID = key-MatrixUUID
                     %target = VALUE #( (
@@ -856,6 +914,11 @@ CLASS lhc_matrix IMPLEMENTATION.
                         Model           = model
                         Color           = color
                         Product         = product
+                        Stock           = stock
+                        AvailableStock  = available_stock
+                        Availability    = availability
+                        Criticality01   = criticality
+                        ProductURL      = productURL
                     ) )
                 ).
                 APPEND wa_item_create TO it_item_create.
@@ -867,6 +930,14 @@ CLASS lhc_matrix IMPLEMENTATION.
                 cupsize     = wa_size-backsizeid.
                 quantity    = wa_size-b.
                 product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                get_stock_availability( EXPORTING i_plant           = plant
+                                                  i_product         = product
+                                                  i_quantity        = quantity
+                                        IMPORTING o_stock           = stock
+                                                  o_available_stock = available_stock
+                                                  o_availability    = availability
+                                                  o_criticality     = criticality ).
+                productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
                 wa_item_create = VALUE #(
                     MatrixUUID = key-MatrixUUID
                     %target = VALUE #( (
@@ -879,6 +950,11 @@ CLASS lhc_matrix IMPLEMENTATION.
                         Model           = model
                         Color           = color
                         Product         = product
+                        Stock           = stock
+                        AvailableStock  = available_stock
+                        Availability    = availability
+                        Criticality01   = criticality
+                        ProductURL      = productURL
                     ) )
                 ).
                 APPEND wa_item_create TO it_item_create.
@@ -890,6 +966,14 @@ CLASS lhc_matrix IMPLEMENTATION.
                 cupsize     = wa_size-backsizeid.
                 quantity    = wa_size-c.
                 product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                get_stock_availability( EXPORTING i_plant           = plant
+                                                  i_product         = product
+                                                  i_quantity        = quantity
+                                        IMPORTING o_stock           = stock
+                                                  o_available_stock = available_stock
+                                                  o_availability    = availability
+                                                  o_criticality     = criticality ).
+                productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
                 wa_item_create = VALUE #(
                     MatrixUUID = key-MatrixUUID
                     %target = VALUE #( (
@@ -902,6 +986,11 @@ CLASS lhc_matrix IMPLEMENTATION.
                         Model           = model
                         Color           = color
                         Product         = product
+                        Stock           = stock
+                        AvailableStock  = available_stock
+                        Availability    = availability
+                        Criticality01   = criticality
+                        ProductURL      = productURL
                     ) )
                 ).
                 APPEND wa_item_create TO it_item_create.
@@ -913,6 +1002,14 @@ CLASS lhc_matrix IMPLEMENTATION.
                 cupsize     = wa_size-backsizeid.
                 quantity    = wa_size-d.
                 product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                get_stock_availability( EXPORTING i_plant           = plant
+                                                  i_product         = product
+                                                  i_quantity        = quantity
+                                        IMPORTING o_stock           = stock
+                                                  o_available_stock = available_stock
+                                                  o_availability    = availability
+                                                  o_criticality     = criticality ).
+                productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
                 wa_item_create = VALUE #(
                     MatrixUUID = key-MatrixUUID
                     %target = VALUE #( (
@@ -925,6 +1022,11 @@ CLASS lhc_matrix IMPLEMENTATION.
                         Model           = model
                         Color           = color
                         Product         = product
+                        Stock           = stock
+                        AvailableStock  = available_stock
+                        Availability    = availability
+                        Criticality01   = criticality
+                        ProductURL      = productURL
                     ) )
                 ).
                 APPEND wa_item_create TO it_item_create.
@@ -936,6 +1038,14 @@ CLASS lhc_matrix IMPLEMENTATION.
                 cupsize     = wa_size-backsizeid.
                 quantity    = wa_size-e.
                 product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                get_stock_availability( EXPORTING i_plant           = plant
+                                                  i_product         = product
+                                                  i_quantity        = quantity
+                                        IMPORTING o_stock           = stock
+                                                  o_available_stock = available_stock
+                                                  o_availability    = availability
+                                                  o_criticality     = criticality ).
+                productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
                 wa_item_create = VALUE #(
                     MatrixUUID = key-MatrixUUID
                     %target = VALUE #( (
@@ -948,6 +1058,11 @@ CLASS lhc_matrix IMPLEMENTATION.
                         Model           = model
                         Color           = color
                         Product         = product
+                        Stock           = stock
+                        AvailableStock  = available_stock
+                        Availability    = availability
+                        Criticality01   = criticality
+                        ProductURL      = productURL
                     ) )
                 ).
                 APPEND wa_item_create TO it_item_create.
@@ -959,6 +1074,14 @@ CLASS lhc_matrix IMPLEMENTATION.
                 cupsize     = wa_size-backsizeid.
                 quantity    = wa_size-f.
                 product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                get_stock_availability( EXPORTING i_plant           = plant
+                                                  i_product         = product
+                                                  i_quantity        = quantity
+                                        IMPORTING o_stock           = stock
+                                                  o_available_stock = available_stock
+                                                  o_availability    = availability
+                                                  o_criticality     = criticality ).
+                productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
                 wa_item_create = VALUE #(
                     MatrixUUID = key-MatrixUUID
                     %target = VALUE #( (
@@ -971,6 +1094,11 @@ CLASS lhc_matrix IMPLEMENTATION.
                         Model           = model
                         Color           = color
                         Product         = product
+                        Stock           = stock
+                        AvailableStock  = available_stock
+                        Availability    = availability
+                        Criticality01   = criticality
+                        ProductURL      = productURL
                     ) )
                 ).
                 APPEND wa_item_create TO it_item_create.
@@ -982,6 +1110,14 @@ CLASS lhc_matrix IMPLEMENTATION.
                 cupsize     = wa_size-backsizeid.
                 quantity    = wa_size-g.
                 product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                get_stock_availability( EXPORTING i_plant           = plant
+                                                  i_product         = product
+                                                  i_quantity        = quantity
+                                        IMPORTING o_stock           = stock
+                                                  o_available_stock = available_stock
+                                                  o_availability    = availability
+                                                  o_criticality     = criticality ).
+                productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
                 wa_item_create = VALUE #(
                     MatrixUUID = key-MatrixUUID
                     %target = VALUE #( (
@@ -994,6 +1130,11 @@ CLASS lhc_matrix IMPLEMENTATION.
                         Model           = model
                         Color           = color
                         Product         = product
+                        Stock           = stock
+                        AvailableStock  = available_stock
+                        Availability    = availability
+                        Criticality01   = criticality
+                        ProductURL      = productURL
                     ) )
                 ).
                 APPEND wa_item_create TO it_item_create.
@@ -1005,6 +1146,14 @@ CLASS lhc_matrix IMPLEMENTATION.
                 cupsize     = wa_size-backsizeid.
                 quantity    = wa_size-h.
                 product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                get_stock_availability( EXPORTING i_plant           = plant
+                                                  i_product         = product
+                                                  i_quantity        = quantity
+                                        IMPORTING o_stock           = stock
+                                                  o_available_stock = available_stock
+                                                  o_availability    = availability
+                                                  o_criticality     = criticality ).
+                productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
                 wa_item_create = VALUE #(
                     MatrixUUID = key-MatrixUUID
                     %target = VALUE #( (
@@ -1017,6 +1166,11 @@ CLASS lhc_matrix IMPLEMENTATION.
                         Model           = model
                         Color           = color
                         Product         = product
+                        Stock           = stock
+                        AvailableStock  = available_stock
+                        Availability    = availability
+                        Criticality01   = criticality
+                        ProductURL      = productURL
                     ) )
                 ).
                 APPEND wa_item_create TO it_item_create.
@@ -1028,6 +1182,14 @@ CLASS lhc_matrix IMPLEMENTATION.
                 cupsize     = wa_size-backsizeid.
                 quantity    = wa_size-i.
                 product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                get_stock_availability( EXPORTING i_plant           = plant
+                                                  i_product         = product
+                                                  i_quantity        = quantity
+                                        IMPORTING o_stock           = stock
+                                                  o_available_stock = available_stock
+                                                  o_availability    = availability
+                                                  o_criticality     = criticality ).
+                productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
                 wa_item_create = VALUE #(
                     MatrixUUID = key-MatrixUUID
                     %target = VALUE #( (
@@ -1040,6 +1202,11 @@ CLASS lhc_matrix IMPLEMENTATION.
                         Model           = model
                         Color           = color
                         Product         = product
+                        Stock           = stock
+                        AvailableStock  = available_stock
+                        Availability    = availability
+                        Criticality01   = criticality
+                        ProductURL      = productURL
                     ) )
                 ).
                 APPEND wa_item_create TO it_item_create.
@@ -1051,6 +1218,14 @@ CLASS lhc_matrix IMPLEMENTATION.
                 cupsize     = wa_size-backsizeid.
                 quantity    = wa_size-j.
                 product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                get_stock_availability( EXPORTING i_plant           = plant
+                                                  i_product         = product
+                                                  i_quantity        = quantity
+                                        IMPORTING o_stock           = stock
+                                                  o_available_stock = available_stock
+                                                  o_availability    = availability
+                                                  o_criticality     = criticality ).
+                productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
                 wa_item_create = VALUE #(
                     MatrixUUID = key-MatrixUUID
                     %target = VALUE #( (
@@ -1063,6 +1238,11 @@ CLASS lhc_matrix IMPLEMENTATION.
                         Model           = model
                         Color           = color
                         Product         = product
+                        Stock           = stock
+                        AvailableStock  = available_stock
+                        Availability    = availability
+                        Criticality01   = criticality
+                        ProductURL      = productURL
                     ) )
                 ).
                 APPEND wa_item_create TO it_item_create.
@@ -1074,6 +1254,14 @@ CLASS lhc_matrix IMPLEMENTATION.
                 cupsize     = wa_size-backsizeid.
                 quantity    = wa_size-k.
                 product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                get_stock_availability( EXPORTING i_plant           = plant
+                                                  i_product         = product
+                                                  i_quantity        = quantity
+                                        IMPORTING o_stock           = stock
+                                                  o_available_stock = available_stock
+                                                  o_availability    = availability
+                                                  o_criticality     = criticality ).
+                productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
                 wa_item_create = VALUE #(
                     MatrixUUID = key-MatrixUUID
                     %target = VALUE #( (
@@ -1086,6 +1274,11 @@ CLASS lhc_matrix IMPLEMENTATION.
                         Model           = model
                         Color           = color
                         Product         = product
+                        Stock           = stock
+                        AvailableStock  = available_stock
+                        Availability    = availability
+                        Criticality01   = criticality
+                        ProductURL      = productURL
                     ) )
                 ).
                 APPEND wa_item_create TO it_item_create.
@@ -1097,6 +1290,14 @@ CLASS lhc_matrix IMPLEMENTATION.
                 cupsize     = wa_size-backsizeid.
                 quantity    = wa_size-l.
                 product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                get_stock_availability( EXPORTING i_plant           = plant
+                                                  i_product         = product
+                                                  i_quantity        = quantity
+                                        IMPORTING o_stock           = stock
+                                                  o_available_stock = available_stock
+                                                  o_availability    = availability
+                                                  o_criticality     = criticality ).
+                productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
                 wa_item_create = VALUE #(
                     MatrixUUID = key-MatrixUUID
                     %target = VALUE #( (
@@ -1109,6 +1310,11 @@ CLASS lhc_matrix IMPLEMENTATION.
                         Model           = model
                         Color           = color
                         Product         = product
+                        Stock           = stock
+                        AvailableStock  = available_stock
+                        Availability    = availability
+                        Criticality01   = criticality
+                        ProductURL      = productURL
                     ) )
                 ).
                 APPEND wa_item_create TO it_item_create.
@@ -1117,7 +1323,7 @@ CLASS lhc_matrix IMPLEMENTATION.
             " Create New Items
             MODIFY ENTITY IN LOCAL MODE zi_matrix_005
               CREATE BY \_Item AUTO FILL CID
-              FIELDS ( ItemID MatrixUUID Model Color Backsize Cupsize Product Quantity )
+              FIELDS ( ItemID MatrixUUID Model Color Backsize Cupsize Product Quantity Stock AvailableStock Availability Criticality01 ProductURL )
               WITH it_item_create
               FAILED DATA(it_failed)
               MAPPED DATA(it_mapped)
@@ -1163,6 +1369,11 @@ CLASS lhc_matrix IMPLEMENTATION.
                     Cupsize         = ls_item2-Cupsize
                     Product         = ls_item2-Product
                     Quantity        = ls_item2-Quantity
+                    Stock           = ls_item2-Stock
+                    AvailableStock  = ls_item2-AvailableStock
+                    Availability    = ls_item2-Availability
+                    Criticality01   = ls_item2-Criticality01
+                    ProductURL      = ls_item2-ProductURL
                 ) )
             ) TO it_item_create.
         ENDLOOP.
@@ -1170,7 +1381,7 @@ CLASS lhc_matrix IMPLEMENTATION.
         " Create New (renumbered) Items
         MODIFY ENTITY IN LOCAL MODE zi_matrix_005
           CREATE BY \_Item AUTO FILL CID
-          FIELDS ( ItemID MatrixUUID Model Color Backsize Cupsize Product Quantity )
+          FIELDS ( ItemID MatrixUUID Model Color Backsize Cupsize Product Quantity Stock AvailableStock Availability Criticality01 ProductURL )
           WITH it_item_create
           FAILED DATA(ls_create_failed2)
           MAPPED DATA(ls_create_mapped2)
@@ -1419,6 +1630,32 @@ CLASS lhc_matrix IMPLEMENTATION.
                 MAPPED DATA(matrix_update_mapped2)
                 REPORTED DATA(matrix_update_reported2).
 
+*           Set Criticality01 according to Color Value
+
+            DATA(criticality01) = '0'. " Grey
+
+            CASE v_color.
+                WHEN '047'.
+                    criticality01 = '1'. " Red
+                WHEN '048'.
+                    criticality01 = '2'. " Yellow (Orange)
+                WHEN '049'.
+                    criticality01 = '3'. " Green
+                WHEN '050'.
+                    criticality01 = '5'. " Blue
+            ENDCASE.
+
+            MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+                ENTITY Matrix
+                UPDATE FIELDS ( Criticality01 )
+                WITH VALUE #( (
+                    %key     = <entity>-%key
+                    Criticality01 = criticality01
+                ) )
+                FAILED DATA(matrix_update_failed3)
+                MAPPED DATA(matrix_update_mapped3)
+                REPORTED DATA(matrix_update_reported3).
+
 *           Populate Size table according to Matrix Type and Country:
 
 *           Read Matrix Type
@@ -1623,6 +1860,7 @@ CLASS lhc_matrix IMPLEMENTATION.
 
 *           Populate Size table according to Matrix Type
 
+
         ENDIF.
 
         IF ( <entity>-%is_draft = '01' ). " Draft
@@ -1644,12 +1882,15 @@ CLASS lhc_matrix IMPLEMENTATION.
     DATA msgv3    TYPE sy-msgv3 VALUE ''.
     DATA msgv4    TYPE sy-msgv3 VALUE ''.
 
-    DATA stock      TYPE P DECIMALS 0.
-    DATA quantity   TYPE P DECIMALS 0.
-    DATA text1 TYPE string.
-    DATA text2 TYPE string.
+    DATA plant              TYPE string VALUE '1000'.
+    DATA product            TYPE string.
+    DATA quantity           TYPE string.
+    DATA stock              TYPE string.
+    DATA available_stock    TYPE string.
+    DATA availability       TYPE string.
+    DATA criticality        TYPE string.
 
-   " Read transfered instances
+    " Read transfered instances
     READ ENTITIES OF zi_matrix_005  IN LOCAL MODE
         ENTITY Matrix
         ALL FIELDS
@@ -1661,6 +1902,8 @@ CLASS lhc_matrix IMPLEMENTATION.
         IF ( <entity>-%is_draft = '00' ). " Saved
 *           APPEND VALUE #( %key = key-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'ATP check - not yet implemented (saved mode).' ) ) TO reported-matrix.
 
+            plant = <entity>-SalesOrganization.
+
 *           Read Actual Item Table
             READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
                 ENTITY Matrix
@@ -1670,28 +1913,62 @@ CLASS lhc_matrix IMPLEMENTATION.
                 FAILED DATA(ls_item_read_failed)
                 REPORTED DATA(ls_item_read_reported).
 
+            SORT lt_item STABLE BY ItemID DESCENDING.
+
             LOOP AT lt_item INTO DATA(ls_item).
-                SELECT SINGLE * FROM I_MaterialStock WHERE ( Material = @ls_item-Product ) INTO @DATA(wa_material_stock).
-                IF ( sy-subrc <> 0 ).
-                    severity    = if_abap_behv_message=>severity-error.
-                    CONCATENATE 'No Stock for Product' ls_item-Product INTO msgv1 SEPARATED BY space .
-                ELSE.
-                    stock       = CONV I( wa_material_stock-MatlWrhsStkQtyInMatlBaseUnit ).
-                    quantity    = CONV I( ls_item-Quantity ).
-                    text1       = CONV string( stock ).
-                    text2       = CONV string( quantity ).
-                    IF ( stock < quantity ).
+                product     = CONV string( ls_item-Product ).
+                quantity    = CONV string( ls_item-Quantity ).
+                get_stock_availability( EXPORTING i_plant           = plant
+                                                  i_product         = product
+                                                  i_quantity        = quantity
+                                        IMPORTING o_stock           = stock
+                                                  o_available_stock = available_stock
+                                                  o_availability    = availability
+                                                  o_criticality     = criticality ).
+                CLEAR msgv1.
+                CLEAR msgv2.
+                CLEAR msgv3.
+                CLEAR msgv4.
+                CASE availability.
+                    WHEN 'No Product'.
+                        severity    = if_abap_behv_message=>severity-error.
+                        CONCATENATE 'No Product' product 'exists' INTO msgv1 SEPARATED BY space.
+                    WHEN 'No Stock'.
+                        severity    = if_abap_behv_message=>severity-error.
+                        CONCATENATE 'No Stock for Product' product INTO msgv1 SEPARATED BY space.
+                    WHEN 'Less'.
                         severity    = if_abap_behv_message=>severity-warning.
-                        CONCATENATE 'Stock for Product' ls_item-Product '(' text1 ')' INTO msgv1 SEPARATED BY space.
-                        CONCATENATE 'is less than required quantity' text2 INTO msgv2 SEPARATED BY space.
-                    ELSE.
-                        severity = if_abap_behv_message=>severity-success.
-                        CONCATENATE 'Stock for Product' ls_item-Product '(' text1 ')' INTO msgv1 SEPARATED BY space.
-                        CONCATENATE 'is OK for required quantity' text2 INTO msgv2 SEPARATED BY space.
-                    ENDIF.
-                ENDIF.
+                        CONCATENATE 'Stock for Product' product '(' available_stock ')' INTO msgv1 SEPARATED BY space.
+                        CONCATENATE 'is less than required quantity' quantity INTO msgv2 SEPARATED BY space.
+                    WHEN 'Ok'.
+                        severity    = if_abap_behv_message=>severity-success.
+                        CONCATENATE 'Stock for Product' product '(' available_stock ')' INTO msgv1 SEPARATED BY space.
+                        CONCATENATE 'is OK for required quantity' quantity INTO msgv2 SEPARATED BY space.
+                ENDCASE.
                 APPEND VALUE #( %key = <entity>-%key %msg = new_message( severity = severity id = msgid number = msgno v1 = msgv1 v2 = msgv2 v3 = msgv3 v4 = msgv4 ) ) TO reported-matrix.
+*               Update the ATP values in items
+                MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+                    ENTITY Item
+                    UPDATE FIELDS (
+                        Stock
+                        AvailableStock
+                        Availability
+                        Criticality01
+                    )
+                    WITH VALUE #( (
+                        %key-MatrixUUID = ls_item-MatrixUUID
+                        %key-ItemID     = ls_item-ItemID
+                        Stock           = stock
+                        AvailableStock  = available_stock
+                        Availability    = availability
+                        Criticality01   = criticality
+                    ) )
+                    MAPPED DATA(ls_update_mapped)
+                    FAILED DATA(ls_update_failed)
+                    REPORTED DATA(ls_update_reported).
+
             ENDLOOP.
+
         ENDIF.
 
         IF ( <entity>-%is_draft = '01' ). " Draft
@@ -1701,4 +1978,184 @@ CLASS lhc_matrix IMPLEMENTATION.
 
   ENDMETHOD. " check_atp
 
+* For ATP Check
+  METHOD get_stock_availability.
+
+    DATA quantity           TYPE P DECIMALS 0.
+    DATA confirmed          TYPE P DECIMALS 0.
+    DATA stock              TYPE P DECIMALS 0.
+    DATA available_stock    TYPE P DECIMALS 0.
+
+*   Check Product
+    SELECT SINGLE * FROM I_Product WHERE ( Product = @i_product ) INTO @DATA(wa_product).
+    IF ( sy-subrc <> 0 ).
+        o_stock             = ''.
+        o_available_stock   = ''.
+        o_availability      = 'No Product'.
+        o_criticality       = '1'. " Red
+    ELSE.
+*       Check Product Stock
+        SELECT
+                *
+            FROM
+                I_MaterialStock
+            WHERE
+                ( Plant     = @i_plant ) AND
+                ( Material  = @i_product )
+            ORDER BY
+                MatlDocLatestPostgDate
+            INTO TABLE
+                @DATA(it_material_stock).
+        IF ( sy-subrc <> 0 ).
+            o_stock             = ''.
+            o_available_stock   = ''.
+            o_availability      = 'No Stock'.
+            o_criticality       = '1'. " Red
+        ELSE.
+
+*        DATA wmdvsx type standard table of bapiwmdvs.
+*        DATA wmdvex type standard table of bapiwmdve.
+*        CALL FUNCTION 'BAPI_MATERIAL_AVAILABILITY'
+*          EXPORTING
+*            plant              = '1000'
+*            material           = i_product
+*            unit               = '1000'
+**            check_rule         =
+**            stge_loc           =
+**            batch              =
+**            customer           =
+**            doc_number         =
+**            itm_number         =
+**            wbs_elem           =
+**            stock_ind          =
+**            dec_for_rounding   =
+**            dec_for_rounding_x =
+**            read_atp_lock      =
+**            read_atp_lock_x    =
+**            material_evg       =
+**            sgt_rcat           =
+**            material_long      =
+**            req_seg_long       =
+**          IMPORTING
+**            endleadtme         =
+**            av_qty_plt         =
+**            dialogflag         =
+**            return             =
+*          TABLES
+*            wmdvsx             = wmdvsx[]
+*            wmdvex             = wmdvex[]
+**          .
+
+*           Stock
+            stock = 0.
+            LOOP AT it_material_stock INTO DATA(wa_material_stock).
+*               Posting Date
+                DATA(matlDocLatestPostgDate)        = wa_material_stock-MatlDocLatestPostgDate.
+*               Stock on Posting Date
+                DATA(matlWrhsStkQtyInMatlBaseUnit)  = wa_material_stock-MatlWrhsStkQtyInMatlBaseUnit.
+                stock = stock + CONV I( matlWrhsStkQtyInMatlBaseUnit ).
+            ENDLOOP.
+*           Confirmed
+            SELECT * FROM I_SalesOrderItemTP WHERE ( Product = @i_product ) INTO TABLE @DATA(it_salesorderitem).
+            confirmed = 0.
+            LOOP AT it_salesorderitem  INTO DATA(wa_salesorderitem).
+*               Check if delivered
+                SELECT SINGLE
+                        *
+                    FROM
+                        I_DeliveryDocumentItem
+                    WHERE
+                        ( ReferenceSDDocument       = @wa_salesorderitem-SalesOrder ) AND
+                        ( ReferenceSDDocumentItem   = @wa_salesorderitem-SalesOrderItem )
+                    INTO
+                        @DATA(wa_deliverydocumentitem).
+                DATA(goodsMovementStatus) = ''.
+                IF ( sy-subrc = 0 ).
+                    goodsMovementStatus = wa_deliverydocumentitem-GoodsMovementStatus.
+                ENDIF.
+                IF ( GoodsMovementStatus <> 'C'  ). " Completed
+                    confirmed = confirmed + CONV I( wa_salesorderitem-ConfdDelivQtyInOrderQtyUnit ).
+                ENDIF.
+            ENDLOOP.
+            available_stock = stock - confirmed.
+
+            IF ( stock >= 0 ).
+                o_stock = CONV string( stock ).
+            ELSE.
+                o_stock = '0'.
+            ENDIF.
+            IF ( available_stock >= 0 ).
+                o_available_stock = CONV string( available_stock ).
+            ELSE.
+                o_available_stock = '0'.
+            ENDIF.
+
+*           Calculate Available
+            quantity = CONV I( i_quantity ).
+            IF ( available_stock < quantity ).
+                o_availability = 'Less'.
+                o_criticality  = '2'. " Yellow
+            ELSE.
+                o_availability = 'Ok'.
+                o_criticality  = '3'. " Green
+            ENDIF.
+
+        ENDIF.
+    ENDIF.
+
+  ENDMETHOD. " get_stock_availability
+
+  METHOD on_sales_order_create.
+* Dummy method - to refresh Sales Order ID and Sales Order URL
+  ENDMETHOD.
+
 ENDCLASS. " lhc_matrix IMPLEMENTATION.
+
+CLASS lsc_zi_matrix_005 DEFINITION INHERITING FROM cl_abap_behavior_saver.
+
+  PROTECTED SECTION.
+
+    METHODS save_modified REDEFINITION.
+
+    METHODS cleanup_finalize REDEFINITION.
+
+    METHODS new_message_with_text REDEFINITION.
+
+    METHODS new_message REDEFINITION.
+
+ENDCLASS.
+
+CLASS lsc_zi_matrix_005 IMPLEMENTATION.
+
+  METHOD save_modified.
+
+    LOOP AT update-matrix INTO DATA(wa_matrix).
+
+        IF ( ( wa_matrix-CreationDate IS NOT INITIAL ) AND ( wa_matrix-CreationTime IS NOT INITIAL ) AND ( wa_matrix-SalesOrderID IS INITIAL ) ).
+
+            IF zbp_i_matrix_005=>mapped_sales_order IS NOT INITIAL.
+                LOOP AT zbp_i_matrix_005=>mapped_sales_order-salesorder ASSIGNING FIELD-SYMBOL(<fs_so_mapped>).
+                    CONVERT KEY OF i_salesordertp FROM <fs_so_mapped>-%pid TO DATA(ls_so_key).
+                    <fs_so_mapped>-SalesOrder = ls_so_key-SalesOrder.
+                    DATA(salesOrderID)  = ls_so_key-SalesOrder.
+                    DATA(salesOrderURL) = |/ui#SalesOrder-manageV2&/SalesOrderManage('| && condense( val = |{ ls_so_key-SalesOrder ALPHA = OUT }| ) && |')|.
+                    UPDATE zmatrix_005 SET SalesOrderID = @salesOrderID, SalesOrderURL = @salesOrderURL WHERE ( matrixuuid = @wa_matrix-MatrixUUID ).
+                ENDLOOP.
+            ENDIF.
+
+        ENDIF.
+
+    ENDLOOP.
+
+  ENDMETHOD. " save_modified
+
+  METHOD cleanup_finalize.
+  ENDMETHOD.
+
+  METHOD new_message.
+  ENDMETHOD.
+
+  METHOD new_message_with_text.
+  ENDMETHOD.
+
+ENDCLASS.

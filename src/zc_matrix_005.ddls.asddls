@@ -1,10 +1,11 @@
 @EndUserText.label: 'Matrix'
 @AccessControl.authorizationCheck: #NOT_REQUIRED
 @Metadata.allowExtensions: true
+//@ObjectModel.semanticKey: ['Model'] // Bold Font (side effect: Set as Primary Key)
 define root view entity ZC_MATRIX_005 provider contract transactional_query as projection on ZI_MATRIX_005 as Matrix
 {
     key MatrixUUID,
-    MatrixID,
+    MatrixID, 
     @Consumption.valueHelpDefinition: [ { entity: { name: 'ZI_SalesOrderType', element: 'SalesOrderType' } } ]
     SalesOrderType,
     @Consumption.valueHelpDefinition: [ { entity: { name: 'I_SalesOrganization', element: 'SalesOrganization' } } ]
@@ -13,8 +14,13 @@ define root view entity ZC_MATRIX_005 provider contract transactional_query as p
     DistributionChannel,
     @Consumption.valueHelpDefinition: [ { entity: { name: 'I_Division', element: 'Division' } } ]
     OrganizationDivision,
+
     @Consumption.valueHelpDefinition: [ { entity: { name: 'I_Customer', element: 'Customer' } } ]
+    @EndUserText.label: 'Sold To Party'
+    @ObjectModel.text.element: ['CustomerName']
     SoldToParty,
+    _Customer.CustomerName as CustomerName,
+
     @Consumption.valueHelpDefinition: [ { entity: { name: 'ZC_MODEL_005', element: 'ModelID' } } ]
     Model,
     @Consumption.valueHelpDefinition: [ { entity: { name: 'ZC_COLOR_005', element: 'ColorID' } } ]
@@ -31,6 +37,10 @@ define root view entity ZC_MATRIX_005 provider contract transactional_query as p
     CustomerURL,
     ModelRef,
     ModelRefURL,
+    ColorRef,
+    ColorRefURL,
+    CountryRef,
+    CountryRefURL,
     Hidden00,
     Hidden01,
     Hidden02,
@@ -62,8 +72,8 @@ define root view entity ZC_MATRIX_005 provider contract transactional_query as p
     /* Associations */
     _Sizehead: redirected to composition child ZC_SIZEHEAD_005,
     _Size: redirected to composition child ZC_SIZE_005,
-    _Item: redirected to composition child ZC_ITEM_005
+    _Item: redirected to composition child ZC_ITEM_005,
 //    _SalesOrderType,
-//    _Customer
+    _Customer
 
 }

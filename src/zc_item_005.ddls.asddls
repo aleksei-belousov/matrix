@@ -1,6 +1,7 @@
 @EndUserText.label: 'ZC_ITEM_005'
 @AccessControl.authorizationCheck: #NOT_REQUIRED
 @Metadata.allowExtensions: true
+@ObjectModel.semanticKey: ['MatrixUUID','ItemID'] // Bold Font (side effect: Set as Primary Key)
 define view entity ZC_ITEM_005 as projection on ZI_ITEM_005 as Item
 {
     key MatrixUUID,
@@ -11,6 +12,11 @@ define view entity ZC_ITEM_005 as projection on ZI_ITEM_005 as Item
     Backsize,
     Product,
     Quantity,
+    Stock,   
+    AvailableStock,
+    Availability,
+    ProductURL,
+    Criticality01,
     Createdby,
     Createdat,
     LastChangedBy,

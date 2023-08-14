@@ -1,4 +1,4 @@
-managed;
+managed with additional save implementation in class zbp_i_matrix_005 unique;
 strict ( 2 );
 with draft;
 define behavior for ZI_MATRIX_005 alias Matrix
@@ -24,6 +24,7 @@ etag master LocalLastChangedAt
   determination on_create on modify { field MatrixUUID; }
   determination on_model_modify on modify { field Model; }
   determination on_scheme_save on save { field Model, Color, MatrixTypeID, Country; }
+  determination on_sales_order_create on modify { field SalesOrderID, SalesOrderURL; } // to enable refreshing the fields
 
   association _Sizehead { create ( features : instance, authorization : update ); with draft; }
   association _Size { create ( features : instance, authorization : update ); with draft; }
@@ -34,6 +35,8 @@ etag master LocalLastChangedAt
   field ( readonly ) SalesOrderID;
   field ( readonly ) MatrixTypeID;
   field ( readonly ) ModelRef;
+  field ( readonly ) ColorRef;
+  field ( readonly ) CountryRef;
 
   draft action Resume with additional implementation;
   draft action Edit with additional implementation;
@@ -63,6 +66,10 @@ etag master LocalLastChangedAt
     CustomerURL             = customerurl;
     ModelRef                = modelref;
     ModelRefURL             = modelrefurl;
+    ColorRef                = colorref;
+    ColorRefURL             = colorrefurl;
+    CountryRef              = countryref;
+    CountryRefURL           = countryrefurl;
     Hidden00                = hidden00;
     Hidden01                = hidden01;
     Hidden02                = hidden02;
@@ -104,7 +111,9 @@ etag master LocalLastChangedAt
     field Color affects entity _Size;
     field MatrixTypeID affects entity _Size;
     field Country affects entity _Size;
+    action create_sales_order affects field SalesOrderID, field SalesOrderURL;
     action get_sales_order affects field SalesOrderID, field SalesOrderURL, entity _Item, entity _Size;
+    action check_atp affects entity _Item;
   }
 
 }
@@ -164,6 +173,9 @@ etag master LocalLastChangedAt
   field ( readonly ) ItemID;
   field ( readonly ) Product;
   field ( readonly ) Quantity;
+  field ( readonly ) Stock;
+  field ( readonly ) AvailableStock;
+  field ( readonly ) Availability;
   field ( readonly ) LocalLastChangedAt;
 
   association _Matrix { with draft; }

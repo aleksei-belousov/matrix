@@ -4,7 +4,6 @@
                 typeNamePlural: 'Sales Orders',
                 title: { type: #STANDARD, label: 'Sales Order', value: 'MatrixID' } },
   presentationVariant: [{ sortOrder: [{ by: 'SalesOrderID', direction: #ASC }] }] }
-
 annotate entity ZC_MATRIX_005 with 
 {
 
@@ -228,7 +227,6 @@ annotate entity ZC_MATRIX_005 with
     
     @UI: {  lineItem:       [ { position: 30, label: 'Sales Order ID', type: #WITH_URL, url: 'SalesOrderURL' } ],
             identification: [ { position: 30, label: 'Sales Order ID', cssDefault.width: '300px', type: #WITH_URL, url: 'SalesOrderURL' },
-                            /*{ type: #FOR_ACTION, dataAction: 'create_items',        label: 'Create Items' },*/
                               { type: #FOR_ACTION, dataAction: 'check_atp',           label: 'Check ATP' },
                               { type: #FOR_ACTION, dataAction: 'create_sales_order',  label: 'Create Sales Order' },
                               { type: #FOR_ACTION, dataAction: 'update_sales_order',  label: 'Update Sales Order' },
@@ -295,6 +293,24 @@ annotate entity ZC_MATRIX_005 with
 //            identification: [ { position: 140, label: 'Model Ref URL' } ] }
     @UI.hidden: true
     ModelRefURL;
+
+    @UI: {  lineItem:       [ { position: 150, label: 'Colors Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'ColorRefURL' } ],
+            identification: [ { position: 150, label: 'Colors Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'ColorRefURL' } ] }
+    ColorRef;
+
+//    @UI: {  lineItem:       [ { position: 150, label: 'Color Ref URL' } ],
+//            identification: [ { position: 150, label: 'Color Ref URL' } ] }
+    @UI.hidden: true
+    ColorRefURL;
+
+    @UI: {  lineItem:       [ { position: 160, label: 'Countries Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'CountryRefURL' } ],
+            identification: [ { position: 160, label: 'Countries Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'CountryRefURL' } ] }
+    CountryRef;
+
+//    @UI: {  lineItem:       [ { position: 160, label: 'Country Ref URL' } ],
+//            identification: [ { position: 160, label: 'Country Ref URL' } ] }
+    @UI.hidden: true
+    CountryRefURL;
 
 //    @UI: {  lineItem:       [ { position: 140, label: 'Sales Order URL', cssDefault.width: '300px' } ],
 //            identification: [ { position: 140, label: 'Sales Order URL', cssDefault.width: '300px' } ] }

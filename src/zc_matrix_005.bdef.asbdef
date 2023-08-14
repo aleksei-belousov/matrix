@@ -10,7 +10,6 @@ define behavior for ZC_MATRIX_005 alias Matrix
   use delete;
 
   use action check_atp;
-  //use action create_items;
   use action create_sales_order;
   use action update_sales_order;
   use action get_sales_order;

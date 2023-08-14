@@ -39,7 +39,7 @@ annotate entity ZC_ITEM_005 with
             identification: [ { position: 80, label: 'Backsize' } ] }
     Backsize;
 
-    @UI: {  lineItem:       [ { position: 90, label: 'Product', cssDefault.width: '300px' } ],
+    @UI: {  lineItem:       [ { position: 90, label: 'Product', cssDefault.width: '300px', type: #WITH_URL, url: 'ProductURL' } ],
             identification: [ { position: 90, label: 'Product' } ] }
     Product;
 
@@ -47,4 +47,16 @@ annotate entity ZC_ITEM_005 with
             identification: [ { position: 100, label: 'Quantity' } ] }
     Quantity;
      
+    @UI: {  lineItem:       [ { position: 110, label: 'Stock', cssDefault.width: '300px' } ],
+            identification: [ { position: 110, label: 'Stock' } ] }
+    Stock;
+
+    @UI: {  lineItem:       [ { position: 120, label: 'Available Stock', cssDefault.width: '300px' } ],
+            identification: [ { position: 120, label: 'Available Stock' } ] }
+    AvailableStock;
+
+    @UI: {  lineItem:       [ { position: 130, label: 'Availability', cssDefault.width: '300px', criticality:'Criticality01', criticalityRepresentation: #WITH_ICON } ],
+            identification: [ { position: 130, label: 'Availability' } ] }
+    Availability;
+
 }

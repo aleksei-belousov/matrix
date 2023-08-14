@@ -4,6 +4,7 @@ define root view entity ZI_MATRIX_005 as select from zmatrix_005 as Matrix
 composition [0..*] of ZI_SIZEHEAD_005 as _Sizehead
 composition [0..*] of ZI_SIZE_005 as _Size
 composition [0..*] of ZI_ITEM_005 as _Item
+association [0..1] to I_Customer  as _Customer on $projection.SoldToParty = _Customer.Customer
 {
     key matrixuuid as MatrixUUID,
     matrixid as MatrixID,
@@ -24,6 +25,10 @@ composition [0..*] of ZI_ITEM_005 as _Item
     customerurl as CustomerURL,
     modelref as ModelRef,
     modelrefurl as ModelRefURL,
+    colorref as ColorRef,
+    colorrefurl as ColorRefURL,
+    countryref as CountryRef,
+    countryrefurl as CountryRefURL,
     hidden00 as Hidden00,
     hidden01 as Hidden01,
     hidden02 as Hidden02,
@@ -54,5 +59,6 @@ composition [0..*] of ZI_ITEM_005 as _Item
     locallastchangedat as LocalLastChangedAt,
     _Sizehead, // Make association public
     _Size, // Make association public
-    _Item  // Make association public
+    _Item, // Make association public
+    _Customer // Make association public
 }
