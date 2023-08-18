@@ -41,6 +41,8 @@ define root view entity ZC_MATRIX_005 provider contract transactional_query as p
     ColorRefURL,
     CountryRef,
     CountryRefURL,
+    MatrixTypeRef,
+    MatrixTypeRefURL,
     Hidden00,
     Hidden01,
     Hidden02,

@@ -29,6 +29,8 @@ association [0..1] to I_Customer  as _Customer on $projection.SoldToParty = _Cus
     colorrefurl as ColorRefURL,
     countryref as CountryRef,
     countryrefurl as CountryRefURL,
+    matrixtyperef as MatrixTypeRef,
+    matrixtyperefurl as MatrixTypeRefURL,
     hidden00 as Hidden00,
     hidden01 as Hidden01,
     hidden02 as Hidden02,

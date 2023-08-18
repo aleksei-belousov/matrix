@@ -5,6 +5,7 @@ association to parent ZI_MATRIX_005 as _Matrix on $projection.MatrixUUID = _Matr
 {
     key matrixuuid as MatrixUUID,
     key itemid as ItemID,
+    itemid2 as ItemID2,
     model as Model,
     color as Color,
     cupsize as Cupsize,

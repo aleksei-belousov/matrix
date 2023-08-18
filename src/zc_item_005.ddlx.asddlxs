@@ -19,9 +19,13 @@ annotate entity ZC_ITEM_005 with
     //        identification: [ { position: 10, label: 'Matrix UUID' } ] }
     //MatrixUUID;
 
+    //@UI: {  lineItem:       [ { position: 40, label: 'Item ID', cssDefault.width: '300px' } ],
+    //        identification: [ { position: 40, label: 'Item ID' } ] }
+    //ItemID;
+
     @UI: {  lineItem:       [ { position: 40, label: 'Item ID', cssDefault.width: '300px' } ],
             identification: [ { position: 40, label: 'Item ID' } ] }
-    ItemID;
+    ItemID2;
 
     @UI: {  lineItem:       [ { position: 50, label: 'Model', cssDefault.width: '300px' } ],
             identification: [ { position: 50, label: 'Model' } ] }
