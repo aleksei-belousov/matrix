@@ -18,7 +18,7 @@ etag master LocalLastChangedAt
 
   draft action Resume with additional implementation;
   draft action Edit with additional implementation;
-  draft action Activate with additional implementation;
+  draft action Activate with additional implementation optimized;
   draft action Discard /*with additional implementation*/;
 
   draft determine action Prepare {

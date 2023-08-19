@@ -462,6 +462,7 @@ CLASS lhc_matrix IMPLEMENTATION.
                         %target = VALUE #( (
                             %cid       = sy-tabix
                             ItemID     = sy-tabix
+                            ItemID2    = sy-tabix
                             Model      = model
                             Color      = color
                             Cupsize    = cupsize
@@ -477,7 +478,7 @@ CLASS lhc_matrix IMPLEMENTATION.
                 MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
                     ENTITY Matrix
                     CREATE BY \_Item
-                    FIELDS ( ItemID Model Color Cupsize Backsize Product Quantity ProductURL )
+                    FIELDS ( ItemID ItemID2 Model Color Cupsize Backsize Product Quantity ProductURL )
                     WITH it_item_create
                     FAILED DATA(ls_item_failed)
                     MAPPED DATA(ls_item_mapped)
@@ -497,6 +498,12 @@ CLASS lhc_matrix IMPLEMENTATION.
 
             READ TABLE lt_sizehead INTO DATA(ls_sizehead1) WITH KEY SizeID = 1.
             READ TABLE lt_sizehead INTO DATA(ls_sizehead2) WITH KEY SizeID = 2.
+
+**           OhneGr (Default)
+*            IF ( lt_sizehead IS INITIAL ).
+*                ls_sizehead1-a = '001'.
+*                ls_sizehead2-a = '001'.
+*            ENDIF.
 
             READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
                 ENTITY Matrix
@@ -850,9 +857,11 @@ CLASS lhc_matrix IMPLEMENTATION.
 
 *       Set Matrix Type URL
         DATA(matrixTypeRef)     = |Link|.
-        DATA(matrixTypeRefURL)  = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=C%C2%87u%C2%84C%C2%83%C2%84%C2%89C%C2%83xu%C2%88uHC%C2%87u%C2%84C%C2%8E%C2%87vs%C2%81u%C2%88%C2%86%7D%C2%8C%C2%88%C2%8D%C2%84ysDDIC| &&
-                                  |%C2%87%C2%86%C2%8AxC%C2%87u%C2%84C%C2%8E%C2%87xs%C2%81u%C2%88%C2%86%7D%C2%8C%C2%88%C2%8D%C2%84ysDDICDDDEC77nWsaUhf%5DlhmdYsDDI77sVuw%7Fg%7D%C2%8EyTTsW%C2%89%C2%84g%7D%C2%8Ey77nWsVUW_g| &&
-                                  |%5DnYsDDITTnWsWidg%5DnYsDDI77ngXsaUhf%5DlhmdYsDDI77DDDE77ngVsaUhf%5DlhmdYsDDI&sap-ui-language=EN&sap-client=080|.
+*        DATA(matrixTypeRefURL)  = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=C%C2%87u%C2%84C%C2%83%C2%84%C2%89C%C2%83xu%C2%88uHC%C2%87u%C2%84C%C2%8E%C2%87vs%C2%81u%C2%88%C2%86%7D%C2%8C%C2%88%C2%8D%C2%84ysDDIC| &&
+*                                  |%C2%87%C2%86%C2%8AxC%C2%87u%C2%84C%C2%8E%C2%87xs%C2%81u%C2%88%C2%86%7D%C2%8C%C2%88%C2%8D%C2%84ysDDICDDDEC77nWsaUhf%5DlhmdYsDDI77sVuw%7Fg%7D%C2%8EyTTsW%C2%89%C2%84g%7D%C2%8Ey77nWsVUW_g| &&
+*                                  |%5DnYsDDITTnWsWidg%5DnYsDDI77ngXsaUhf%5DlhmdYsDDI77DDDE77ngVsaUhf%5DlhmdYsDDI&sap-ui-language=EN&sap-client=080|.
+        DATA(matrixTypeRefURL)  = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvsu%7DysDDICxCuCxsu%7DysDDICDDDEC77nWsaUhf%5DlhmdYsDDI77sVuwg%7DyTTsWg%7Dy77nWsVUW_g%5DnYsDDITTnWsWidg%5DnYsDDI77| &&
+                                  |ngXsaUhf%5DlhmdYsDDI77DDDE77ngVsaUhf%5DlhmdYsDDI&sap-ui-language=EN&sap-client=080|.
 
         MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
             ENTITY Matrix
@@ -1100,7 +1109,7 @@ CLASS lhc_matrix IMPLEMENTATION.
                 ELSE.
                     hidden20 = abap_false.
                 ENDIF.
-            ELSE. " OhneGr
+            ELSE. " OhneGr (Default)
                 hidden21 = abap_false.
             ENDIF.
 
@@ -1181,6 +1190,12 @@ CLASS lhc_matrix IMPLEMENTATION.
 
             SORT lt_backsize STABLE BY Sort BackSizeID.
             SORT lt_cupsize STABLE BY Sort CupSizeID.
+
+*           OhneGr (Default)
+            IF ( lt_backsize[] IS INITIAL ).
+                ls_sizehead1-a = '001'.
+                ls_sizehead2-a = '001'.
+            ENDIF.
 
             LOOP AT lt_backsize INTO DATA(ls_backsize).
                 tabix = sy-tabix.
@@ -1758,7 +1773,7 @@ CLASS lhc_matrix IMPLEMENTATION.
 
 *   Add New Items based on Actual Size table
     LOOP AT lt_size INTO DATA(wa_size).
-        IF ( wa_size-a IS NOT INITIAL ).
+        IF ( ( wa_size-a IS NOT INITIAL ) AND ( ls_sizehead2-a IS NOT INITIAL ) ).
             maxid = maxid + 1.
             cid = maxid.
             backsize    = ls_sizehead2-a.
@@ -1796,7 +1811,7 @@ CLASS lhc_matrix IMPLEMENTATION.
             ).
             APPEND wa_item_create TO it_item_create.
         ENDIF.
-        IF ( wa_size-b IS NOT INITIAL ).
+        IF ( ( wa_size-b IS NOT INITIAL ) AND ( ls_sizehead2-b IS NOT INITIAL ) ).
             maxid = maxid + 1.
             cid = maxid.
             backsize    = ls_sizehead2-b.
@@ -1834,7 +1849,7 @@ CLASS lhc_matrix IMPLEMENTATION.
             ).
             APPEND wa_item_create TO it_item_create.
         ENDIF.
-        IF ( wa_size-c IS NOT INITIAL ).
+        IF ( ( wa_size-c IS NOT INITIAL ) AND ( ls_sizehead2-c IS NOT INITIAL ) ).
             maxid = maxid + 1.
             cid = maxid.
             backsize    = ls_sizehead2-c.
@@ -1872,7 +1887,7 @@ CLASS lhc_matrix IMPLEMENTATION.
             ).
             APPEND wa_item_create TO it_item_create.
         ENDIF.
-        IF ( wa_size-d IS NOT INITIAL ).
+        IF ( ( wa_size-d IS NOT INITIAL ) AND ( ls_sizehead2-d IS NOT INITIAL ) ).
             maxid = maxid + 1.
             cid = maxid.
             backsize    = ls_sizehead2-d.
@@ -1910,7 +1925,7 @@ CLASS lhc_matrix IMPLEMENTATION.
             ).
             APPEND wa_item_create TO it_item_create.
         ENDIF.
-        IF ( wa_size-e IS NOT INITIAL ).
+        IF ( ( wa_size-e IS NOT INITIAL ) AND ( ls_sizehead2-e IS NOT INITIAL ) ).
             maxid = maxid + 1.
             cid = maxid.
             backsize    = ls_sizehead2-e.
@@ -1948,7 +1963,7 @@ CLASS lhc_matrix IMPLEMENTATION.
             ).
             APPEND wa_item_create TO it_item_create.
         ENDIF.
-        IF ( wa_size-f IS NOT INITIAL ).
+        IF ( ( wa_size-f IS NOT INITIAL ) AND ( ls_sizehead2-f IS NOT INITIAL ) ).
             maxid = maxid + 1.
             cid = maxid.
             backsize    = ls_sizehead2-f.
@@ -1986,7 +2001,7 @@ CLASS lhc_matrix IMPLEMENTATION.
             ).
             APPEND wa_item_create TO it_item_create.
         ENDIF.
-        IF ( wa_size-g IS NOT INITIAL ).
+        IF ( ( wa_size-g IS NOT INITIAL ) AND ( ls_sizehead2-g IS NOT INITIAL ) ).
             maxid = maxid + 1.
             cid = maxid.
             backsize    = ls_sizehead2-g.
@@ -2024,7 +2039,7 @@ CLASS lhc_matrix IMPLEMENTATION.
             ).
             APPEND wa_item_create TO it_item_create.
         ENDIF.
-        IF ( wa_size-h IS NOT INITIAL ).
+        IF ( ( wa_size-h IS NOT INITIAL ) AND ( ls_sizehead2-h IS NOT INITIAL ) ).
             maxid = maxid + 1.
             cid = maxid.
             backsize    = ls_sizehead2-h.
@@ -2062,7 +2077,7 @@ CLASS lhc_matrix IMPLEMENTATION.
             ).
             APPEND wa_item_create TO it_item_create.
         ENDIF.
-        IF ( wa_size-i IS NOT INITIAL ).
+        IF ( ( wa_size-i IS NOT INITIAL ) AND ( ls_sizehead2-i IS NOT INITIAL ) ).
             maxid = maxid + 1.
             cid = maxid.
             backsize    = ls_sizehead2-i.
@@ -2100,7 +2115,7 @@ CLASS lhc_matrix IMPLEMENTATION.
             ).
             APPEND wa_item_create TO it_item_create.
         ENDIF.
-        IF ( wa_size-j IS NOT INITIAL ).
+        IF ( ( wa_size-j IS NOT INITIAL ) AND ( ls_sizehead2-j IS NOT INITIAL ) ).
             maxid = maxid + 1.
             cid = maxid.
             backsize    = ls_sizehead2-j.
@@ -2138,7 +2153,7 @@ CLASS lhc_matrix IMPLEMENTATION.
             ).
             APPEND wa_item_create TO it_item_create.
         ENDIF.
-        IF ( wa_size-k IS NOT INITIAL ).
+        IF ( ( wa_size-k IS NOT INITIAL ) AND ( ls_sizehead2-k IS NOT INITIAL ) ).
             maxid = maxid + 1.
             cid = maxid.
             backsize    = ls_sizehead2-k.
@@ -2176,7 +2191,7 @@ CLASS lhc_matrix IMPLEMENTATION.
             ).
             APPEND wa_item_create TO it_item_create.
         ENDIF.
-        IF ( wa_size-l IS NOT INITIAL ).
+        IF ( ( wa_size-l IS NOT INITIAL ) AND ( ls_sizehead2-l IS NOT INITIAL ) ).
             maxid = maxid + 1.
             cid = maxid.
             backsize    = ls_sizehead2-l.

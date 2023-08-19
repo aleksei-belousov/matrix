@@ -38,10 +38,11 @@ etag master LocalLastChangedAt
   field ( readonly ) ModelRef;
   field ( readonly ) ColorRef;
   field ( readonly ) CountryRef;
+  field ( readonly ) MatrixTypeRef;
 
   draft action Resume with additional implementation;
   draft action Edit with additional implementation;
-  draft action Activate with additional implementation;
+  draft action Activate with additional implementation optimized;
   draft action Discard /*with additional implementation*/;
 
   draft determine action Prepare {

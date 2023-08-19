@@ -30,6 +30,7 @@
       <TYPE_TEXT>OData V4</TYPE_TEXT>
      </item>
     </SERVICE>
+    <PUBLISH_STATUS>p</PUBLISH_STATUS>
    </SIA6>
   </asx:values>
  </asx:abap>
