@@ -44,7 +44,11 @@ CLASS lhc_matrix DEFINITION INHERITING FROM cl_abap_behavior_handler.
     METHODS update_items FOR MODIFY
       IMPORTING keys FOR ACTION matrix~update_items.
 
-*   Other methods:
+*   Update items for a new color (and the same model) according to the matrix table
+    METHODS copy_color FOR MODIFY
+      IMPORTING keys FOR ACTION matrix~copy_color.
+
+*   Internal methods:
 
 *   Get Availability for ATP check
     METHODS get_stock_availability
@@ -66,15 +70,128 @@ CLASS lhc_matrix DEFINITION INHERITING FROM cl_abap_behavior_handler.
         value(i_model)              TYPE zi_matrix_005-Model
         value(i_color)              TYPE zi_matrix_005-Color.
 
+*   Get Sales Order and Update Matrix Items
+    METHODS get_sales_order_internal
+      IMPORTING
+        value(i_matrixuuid)         TYPE zi_matrix_005-MatrixUUID
+        value(i_model)              TYPE zi_matrix_005-Model
+        value(i_color)              TYPE zi_matrix_005-Color
+        value(i_salesorderid)       TYPE zi_matrix_005-SalesOrderID.
+
 ENDCLASS. " lhc_matrix DEFINITION
 
 CLASS lhc_matrix IMPLEMENTATION.
 
   METHOD get_instance_authorizations.
-  ENDMETHOD.
+
+    IF ( LINES( keys[] ) = 1 ).
+
+       "read transfered instances
+        READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+          ENTITY Matrix
+          ALL FIELDS
+          WITH CORRESPONDING #( keys )
+          RESULT DATA(entities).
+
+        LOOP AT entities ASSIGNING FIELD-SYMBOL(<entity>).
+
+            IF ( <entity>-%is_draft = '00' ). " Saved
+*                APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-success text = 'get_instance_authorizations: Open Saved.' ) ) TO reported-matrix.
+
+*                IF ( <entity>-SalesOrderID IS NOT INITIAL ).
+*
+**                   Read Sales Order Items
+*                    READ ENTITIES OF i_salesordertp
+*                        ENTITY SalesOrder
+*                        BY \_Item
+*                        ALL FIELDS WITH VALUE #( ( salesorder = <entity>-SalesOrderID ) )
+*                        RESULT DATA(lt_salesorder_item)
+*                        FAILED DATA(ls_failed_read1)
+*                        REPORTED DATA(ls_reported_read1).
+*
+*                    SORT lt_salesorder_item STABLE BY Product.
+*
+**                   Read Sales Order Items
+*                    READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+*                        ENTITY Matrix
+*                        BY \_Item
+*                        ALL FIELDS WITH VALUE #( ( matrixuuid = <entity>-MatrixUUID ) )
+*                        RESULT DATA(lt_matrix_item)
+*                        FAILED DATA(ls_failed_read2)
+*                        REPORTED DATA(ls_reported_read2).
+*
+*                    SORT lt_matrix_item STABLE BY Product.
+*
+*                    DATA(equal) = abap_true.
+*                    IF ( LINES( lt_salesorder_item[] ) <> LINES( lt_matrix_item[] ) ).
+*                        equal = abap_false.
+*                    ELSE.
+*                        LOOP AT lt_salesorder_item INTO DATA(ls_salesorder_item).
+*                            READ TABLE lt_matrix_item INTO DATA(ls_matrix_item) WITH KEY Product = ls_salesorder_item-Product.
+*                            IF ( sy-subrc <> 0 ).
+*                                equal = abap_false.
+*                                EXIT.
+*                            ELSE.
+*                                IF ( ls_salesorder_item-RequestedQuantity <> ls_matrix_item-Quantity ).
+*                                    equal = abap_false.
+*                                    EXIT.
+*                                ENDIF.
+*                            ENDIF.
+*                        ENDLOOP.
+*                    ENDIF.
+*
+*                    IF ( equal = abap_true ).
+*                        DATA(a) = 1.
+*                    ELSE.
+**                       Restore Items from the Sales Order (raise an error) :
+*                        get_sales_order_internal(
+*                            i_matrixuuid   = <entity>-MatrixUUID
+*                            i_model        = <entity>-Model
+*                            i_color        = <entity>-Color
+*                            i_salesorderid = <entity>-SalesOrderID
+*                        ).
+*                    ENDIF.
+
+*                ENDIF.
+
+            ENDIF.
+
+            IF ( <entity>-%is_draft = '01' ). " Draft
+*                APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-success text = 'get_instance_authorizations: Open Draft.' ) ) TO reported-matrix.
+            ENDIF.
+
+        ENDLOOP.
+
+    ENDIF.
+
+  ENDMETHOD. " get_instance_authorizations
 
   METHOD get_instance_features.
-  ENDMETHOD.
+
+    IF ( LINES( keys[] ) = 1 ).
+
+       " Read transfered instances
+        READ ENTITIES OF zi_matrix_005  IN LOCAL MODE
+            ENTITY Matrix
+            ALL FIELDS
+            WITH CORRESPONDING #( keys )
+            RESULT DATA(entities).
+
+        LOOP AT entities ASSIGNING FIELD-SYMBOL(<entity>).
+
+            IF ( <entity>-%is_draft = '00' ). " Saved
+*                APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-success text = 'get_instance_features: Open Saved.' ) ) TO reported-matrix.
+            ENDIF.
+
+            IF ( <entity>-%is_draft = '01' ). " Draft
+*                APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-success text = 'get_instance_features: Open Draft.' ) ) TO reported-matrix.
+            ENDIF.
+
+        ENDLOOP.
+
+    ENDIF.
+
+  ENDMETHOD. " get_instance_features
 
   METHOD Resume.
   ENDMETHOD.
@@ -347,20 +464,20 @@ CLASS lhc_matrix IMPLEMENTATION.
 
   METHOD get_sales_order.
 
-    DATA it_matrix_update   TYPE TABLE FOR UPDATE zi_matrix_005\\Matrix.    " Matrix
-    DATA it_item_create     TYPE TABLE FOR CREATE zi_matrix_005\_Item.      " Item
-    DATA it_size_update     TYPE TABLE FOR UPDATE zi_matrix_005\\Size .     " Size
-    DATA wa_size_update     LIKE LINE OF it_size_update.
+*    DATA it_matrix_update   TYPE TABLE FOR UPDATE zi_matrix_005\\Matrix.    " Matrix
+*    DATA it_item_create     TYPE TABLE FOR CREATE zi_matrix_005\_Item.      " Item
+*    DATA it_size_update     TYPE TABLE FOR UPDATE zi_matrix_005\\Size .     " Size
+*    DATA wa_size_update     LIKE LINE OF it_size_update.
 
-    DATA product      TYPE string VALUE ''.
-    DATA quantity     TYPE string VALUE ''.
-    DATA model        TYPE string VALUE ''.
-    DATA color        TYPE string VALUE ''.
-    DATA backsize     TYPE string VALUE ''.
-    DATA cupsize      TYPE string VALUE ''.
-    DATA productURL   TYPE string VALUE ''.
-
-    DATA tabix TYPE sy-tabix.
+*    DATA product      TYPE string VALUE ''.
+*    DATA quantity     TYPE string VALUE ''.
+*    DATA model        TYPE string VALUE ''.
+*    DATA color        TYPE string VALUE ''.
+*    DATA backsize     TYPE string VALUE ''.
+*    DATA cupsize      TYPE string VALUE ''.
+*    DATA productURL   TYPE string VALUE ''.
+*
+*    DATA tabix TYPE sy-tabix.
 
    " Read transfered instances
     READ ENTITIES OF zi_matrix_005  IN LOCAL MODE
@@ -373,215 +490,187 @@ CLASS lhc_matrix IMPLEMENTATION.
 
         IF ( <entity>-%is_draft = '00' ). " Saved
 
-*            SELECT SINGLE
-*                    *
-*                FROM
-*                    i_salesordertp
-*                WHERE
-*                    ( CreationDate = @<entity>-CreationDate ) AND
-*                    ( CreationTime = @<entity>-CreationTime )
-*                INTO
-*                    @DATA(wa_salesordertp).
-*
-*            IF ( sy-subrc <> 0 ).
-*
-*                APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'Sales Order not created yet.' ) ) TO reported-matrix.
-*                RETURN.
-*
-*            ELSE.
-*
-*                DATA(salesOrderURL) = |/ui#SalesOrder-manageV2&/SalesOrderManage('| && condense( val = |{ wa_salesordertp-SalesOrder ALPHA = OUT }| ) && |')|.
-*                "DATA(salesOrderURL) = '/ui#SalesDocument-display?sap-ui-tech-hint=GUI&SalesDocument=' && wa_salesordertp-SalesOrder. " old version on VA03
-*
-**               Sales Order ID
-*                it_matrix_update = VALUE #( (
-*                    %tky            = <entity>-%tky
-*                    SalesOrderID    = wa_salesordertp-SalesOrder
-*                    SalesOrderURL   = salesOrderURL
-*                ) ).
-*
-**               Update Matrix (Sales Order ID)
-*                MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
-*                    ENTITY Matrix
-*                    UPDATE FIELDS ( SalesOrderID SalesOrderURL )
-*                    WITH it_matrix_update
-*                    FAILED DATA(it_failed)
-*                    MAPPED DATA(it_mapped)
-*                    REPORTED DATA(it_reported).
-
-*               Restore Items from Sales Order :
-
+*           Restore Items from Sales Order :
             IF ( <entity>-SalesOrderID IS INITIAL ).
+
                 APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'Sales Order not created yet.' ) ) TO reported-matrix.
-                RETURN.
+
             ELSE.
 
-*               Read Actual Matrix Items
-                READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
-                    ENTITY Matrix
-                    BY \_Item
-                    ALL FIELDS WITH VALUE #( ( MatrixUUID = <entity>-MatrixUUID ) )
-                    RESULT DATA(lt_matrix_item)
-                    FAILED DATA(ls_read_failed)
-                    REPORTED DATA(ls_read_reported).
+                get_sales_order_internal(
+                    i_matrixuuid   = <entity>-MatrixUUID
+                    i_model        = <entity>-Model
+                    i_color        = <entity>-Color
+                    i_salesorderid = <entity>-SalesOrderID
+                ).
 
-                SORT lt_matrix_item STABLE BY ItemID.
+**               Read Actual Matrix Items
+*                READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+*                    ENTITY Matrix
+*                    BY \_Item
+*                    ALL FIELDS WITH VALUE #( ( MatrixUUID = <entity>-MatrixUUID ) )
+*                    RESULT DATA(lt_matrix_item)
+*                    FAILED DATA(ls_read_failed)
+*                    REPORTED DATA(ls_read_reported).
+*
+*                SORT lt_matrix_item STABLE BY ItemID.
+*
+**               Delete Actual Matrix Items
+*                LOOP AT lt_matrix_item INTO DATA(ls_matrix_item).
+*                    MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+*                        ENTITY Item
+*                        DELETE FROM VALUE #( ( MatrixUUID = <entity>-MatrixUUID ItemID = ls_matrix_item-ItemID ) )
+*                        FAILED DATA(ls_delete_failed)
+*                        MAPPED DATA(ls_delete_mapped)
+*                        REPORTED DATA(ls_delete_reported).
+*                ENDLOOP.
+*
+**               Read Sales Order Items
+*                READ ENTITIES OF i_salesordertp
+*                    ENTITY SalesOrder
+*                    BY \_Item
+*                    ALL FIELDS WITH VALUE #( ( salesorder = <entity>-SalesOrderID ) )
+*                    RESULT DATA(lt_salesorder_item)
+*                    FAILED DATA(ls_failed_read)
+*                    REPORTED DATA(ls_reported_read).
+*
+*                SORT lt_salesorder_item STABLE BY SalesOrderItem.
+*
+**               Create New Matrix Items
+*                LOOP AT lt_salesorder_item INTO DATA(ls_salesorder_item).
+*
+*                    product   = ls_salesorder_item-product.
+*                    SPLIT product AT '-' INTO model color cupsize backsize.
+*                    quantity = round( val  = ls_salesorder_item-RequestedQuantity dec  = 0 ).
+*                    CONDENSE quantity NO-GAPS.
+*                    productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+*
+*                    APPEND VALUE #(
+*                        MatrixUUID = <entity>-MatrixUUID
+*                        %target = VALUE #( (
+*                            %cid       = sy-tabix
+*                            ItemID     = sy-tabix
+*                            ItemID2    = sy-tabix
+*                            Model      = model
+*                            Color      = color
+*                            Cupsize    = cupsize
+*                            Backsize   = backsize
+*                            Product    = product
+*                            Quantity   = quantity
+*                            ProductURL = productURL
+*                        ) )
+*                    ) TO it_item_create.
+*
+*                ENDLOOP.
+*
+*                MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+*                    ENTITY Matrix
+*                    CREATE BY \_Item
+*                    FIELDS ( ItemID ItemID2 Model Color Cupsize Backsize Product Quantity ProductURL )
+*                    WITH it_item_create
+*                    FAILED DATA(ls_item_failed)
+*                    MAPPED DATA(ls_item_mapped)
+*                    REPORTED DATA(ls_item_reported).
+*
+**               Update Size table from Item table:
+*
+**               Read Size Head table
+*                READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+*                    ENTITY Matrix
+*                    BY \_Sizehead
+*                    ALL FIELDS WITH VALUE #( ( MatrixUUID = <entity>-MatrixUUID ) )
+*                    RESULT DATA(lt_sizehead)
+*                    FAILED DATA(ls_failed_sizehead_read)
+*                    REPORTED DATA(ls_reported_sizehead_read).
+*
+*                READ TABLE lt_sizehead INTO DATA(ls_sizehead1) WITH KEY SizeID = 1.
+*                READ TABLE lt_sizehead INTO DATA(ls_sizehead2) WITH KEY SizeID = 2.
+*
+***               OhneGr (Default)
+**                IF ( lt_sizehead IS INITIAL ).
+**                    ls_sizehead1-a = '001'.
+**                    ls_sizehead2-a = '001'.
+**                ENDIF.
+*
+*                READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+*                    ENTITY Matrix
+*                    BY \_Size
+*                    ALL FIELDS WITH VALUE #( ( MatrixUUID = <entity>-MatrixUUID ) )
+*                    RESULT DATA(lt_size)
+*                    FAILED DATA(ls_failed_size_read)
+*                    REPORTED DATA(ls_reported_size_read).
+*
+**               Copy Size table to Size Update table
+*                LOOP AT lt_size INTO DATA(wa_size).
+*                    MOVE-CORRESPONDING wa_size TO wa_size_update.
+*                    CLEAR wa_size_update-a.
+*                    CLEAR wa_size_update-b.
+*                    CLEAR wa_size_update-c.
+*                    CLEAR wa_size_update-d.
+*                    CLEAR wa_size_update-e.
+*                    CLEAR wa_size_update-f.
+*                    CLEAR wa_size_update-g.
+*                    CLEAR wa_size_update-h.
+*                    CLEAR wa_size_update-i.
+*                    CLEAR wa_size_update-j.
+*                    CLEAR wa_size_update-k.
+*                    CLEAR wa_size_update-l.
+*                    APPEND wa_size_update TO it_size_update.
+*                ENDLOOP.
+*
+**               Fill Quantities
+*                LOOP AT it_item_create INTO DATA(wa_item_create).
+*                    LOOP AT wa_item_create-%target INTO DATA(target).
+*                        product = target-Product.
+*                        SPLIT product AT '-' INTO model color cupsize backsize.
+*                        IF ( ( model = <entity>-Model ) AND ( color = <entity>-Color ) ).
+*                            quantity = target-Quantity.
+*                            LOOP AT it_size_update INTO wa_size_update.
+*                                tabix = sy-tabix.
+*                                IF ( cupsize = wa_size_update-Back ).
+*                                    CASE backsize.
+*                                        WHEN ls_sizehead2-a.
+*                                            wa_size_update-a = quantity.
+*                                        WHEN ls_sizehead2-b.
+*                                            wa_size_update-b = quantity.
+*                                        WHEN ls_sizehead2-c.
+*                                            wa_size_update-c = quantity.
+*                                        WHEN ls_sizehead2-d.
+*                                            wa_size_update-d = quantity.
+*                                        WHEN ls_sizehead2-e.
+*                                            wa_size_update-e = quantity.
+*                                        WHEN ls_sizehead2-f.
+*                                            wa_size_update-f = quantity.
+*                                        WHEN ls_sizehead2-g.
+*                                            wa_size_update-g = quantity.
+*                                        WHEN ls_sizehead2-h.
+*                                            wa_size_update-h = quantity.
+*                                        WHEN ls_sizehead2-i.
+*                                            wa_size_update-i = quantity.
+*                                        WHEN ls_sizehead2-j.
+*                                            wa_size_update-j = quantity.
+*                                        WHEN ls_sizehead2-k.
+*                                            wa_size_update-k = quantity.
+*                                        WHEN ls_sizehead2-l.
+*                                            wa_size_update-l = quantity.
+*                                    ENDCASE.
+*                                ENDIF.
+*                                MODIFY it_size_update FROM wa_size_update INDEX tabix.
+*                            ENDLOOP.
+*                        ENDIF.
+*                    ENDLOOP.
+*                ENDLOOP.
+*
+**               Update Actual Size Table
+*                MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+*                    ENTITY Size
+*                    UPDATE FIELDS ( a b c d e f g h i j k l )
+*                    WITH it_size_update
+*                    MAPPED DATA(ls_size_update_mapped)
+*                    FAILED DATA(ls_size_update_failed)
+*                    REPORTED DATA(ls_size_update_reported).
 
-*               Delete Actual Matrix Items
-                LOOP AT lt_matrix_item INTO DATA(ls_matrix_item).
-                    MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
-                        ENTITY Item
-                        DELETE FROM VALUE #( ( MatrixUUID = <entity>-MatrixUUID ItemID = ls_matrix_item-ItemID ) )
-                        FAILED DATA(ls_delete_failed)
-                        MAPPED DATA(ls_delete_mapped)
-                        REPORTED DATA(ls_delete_reported).
-                ENDLOOP.
-
-*               Read Sales Order Items
-                READ ENTITIES OF i_salesordertp
-                    ENTITY SalesOrder
-                    BY \_Item
-                    ALL FIELDS WITH VALUE #( ( salesorder = <entity>-SalesOrderID ) )
-                    RESULT DATA(lt_salesorder_item)
-                    FAILED DATA(ls_failed_read)
-                    REPORTED DATA(ls_reported_read).
-
-                SORT lt_salesorder_item STABLE BY SalesOrderItem.
-
-*               Create New Matrix Items
-                LOOP AT lt_salesorder_item INTO DATA(ls_salesorder_item).
-
-                    product   = ls_salesorder_item-product.
-                    SPLIT product AT '-' INTO model color cupsize backsize.
-                    quantity = round( val  = ls_salesorder_item-RequestedQuantity dec  = 0 ).
-                    CONDENSE quantity NO-GAPS.
-                    productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
-
-                    APPEND VALUE #(
-                        MatrixUUID = <entity>-MatrixUUID
-                        %target = VALUE #( (
-                            %cid       = sy-tabix
-                            ItemID     = sy-tabix
-                            ItemID2    = sy-tabix
-                            Model      = model
-                            Color      = color
-                            Cupsize    = cupsize
-                            Backsize   = backsize
-                            Product    = product
-                            Quantity   = quantity
-                            ProductURL = productURL
-                        ) )
-                    ) TO it_item_create.
-
-                ENDLOOP.
-
-                MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
-                    ENTITY Matrix
-                    CREATE BY \_Item
-                    FIELDS ( ItemID ItemID2 Model Color Cupsize Backsize Product Quantity ProductURL )
-                    WITH it_item_create
-                    FAILED DATA(ls_item_failed)
-                    MAPPED DATA(ls_item_mapped)
-                    REPORTED DATA(ls_item_reported).
             ENDIF.
-
-*           Update Size table from Item table:
-
-*           Read Size Head table
-            READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
-                ENTITY Matrix
-                BY \_Sizehead
-                ALL FIELDS WITH VALUE #( ( MatrixUUID = <entity>-MatrixUUID ) )
-                RESULT DATA(lt_sizehead)
-                FAILED DATA(ls_failed_sizehead_read)
-                REPORTED DATA(ls_reported_sizehead_read).
-
-            READ TABLE lt_sizehead INTO DATA(ls_sizehead1) WITH KEY SizeID = 1.
-            READ TABLE lt_sizehead INTO DATA(ls_sizehead2) WITH KEY SizeID = 2.
-
-**           OhneGr (Default)
-*            IF ( lt_sizehead IS INITIAL ).
-*                ls_sizehead1-a = '001'.
-*                ls_sizehead2-a = '001'.
-*            ENDIF.
-
-            READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
-                ENTITY Matrix
-                BY \_Size
-                ALL FIELDS WITH VALUE #( ( MatrixUUID = <entity>-MatrixUUID ) )
-                RESULT DATA(lt_size)
-                FAILED DATA(ls_failed_size_read)
-                REPORTED DATA(ls_reported_size_read).
-
-*           Copy Size table to Size Update table
-            LOOP AT lt_size INTO DATA(wa_size).
-                MOVE-CORRESPONDING wa_size TO wa_size_update.
-                CLEAR wa_size_update-a.
-                CLEAR wa_size_update-b.
-                CLEAR wa_size_update-c.
-                CLEAR wa_size_update-d.
-                CLEAR wa_size_update-e.
-                CLEAR wa_size_update-f.
-                CLEAR wa_size_update-g.
-                CLEAR wa_size_update-h.
-                CLEAR wa_size_update-i.
-                CLEAR wa_size_update-j.
-                CLEAR wa_size_update-k.
-                CLEAR wa_size_update-l.
-                APPEND wa_size_update TO it_size_update.
-            ENDLOOP.
-
-*           Fill Quantities
-            LOOP AT it_item_create INTO DATA(wa_item_create).
-                LOOP AT wa_item_create-%target INTO DATA(target).
-                    product = target-Product.
-                    SPLIT product AT '-' INTO model color cupsize backsize.
-                    IF ( ( model = <entity>-Model ) AND ( color = <entity>-Color ) ).
-                        quantity = target-Quantity.
-                        LOOP AT it_size_update INTO wa_size_update.
-                            tabix = sy-tabix.
-                            IF ( cupsize = wa_size_update-Back ).
-                                CASE backsize.
-                                    WHEN ls_sizehead2-a.
-                                        wa_size_update-a = quantity.
-                                    WHEN ls_sizehead2-b.
-                                        wa_size_update-b = quantity.
-                                    WHEN ls_sizehead2-c.
-                                        wa_size_update-c = quantity.
-                                    WHEN ls_sizehead2-d.
-                                        wa_size_update-d = quantity.
-                                    WHEN ls_sizehead2-e.
-                                        wa_size_update-e = quantity.
-                                    WHEN ls_sizehead2-f.
-                                        wa_size_update-f = quantity.
-                                    WHEN ls_sizehead2-g.
-                                        wa_size_update-g = quantity.
-                                    WHEN ls_sizehead2-h.
-                                        wa_size_update-h = quantity.
-                                    WHEN ls_sizehead2-i.
-                                        wa_size_update-i = quantity.
-                                    WHEN ls_sizehead2-j.
-                                        wa_size_update-j = quantity.
-                                    WHEN ls_sizehead2-k.
-                                        wa_size_update-k = quantity.
-                                    WHEN ls_sizehead2-l.
-                                        wa_size_update-l = quantity.
-                                ENDCASE.
-                            ENDIF.
-                            MODIFY it_size_update FROM wa_size_update INDEX tabix.
-                        ENDLOOP.
-                    ENDIF.
-                ENDLOOP.
-            ENDLOOP.
-
-*           Update Actual Size Table
-            MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
-                ENTITY Size
-                UPDATE FIELDS ( a b c d e f g h i j k l )
-                WITH it_size_update
-                MAPPED DATA(ls_size_update_mapped)
-                FAILED DATA(ls_size_update_failed)
-                REPORTED DATA(ls_size_update_reported).
 
         ENDIF.
 
@@ -621,20 +710,11 @@ CLASS lhc_matrix IMPLEMENTATION.
             SELECT MAX( matrixid ) FROM zi_matrix_005 INTO (@matrixid).
             matrixid  = ( matrixid + 1 ).
 
+*           Main Data:
+
             MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
                 ENTITY Matrix
-                UPDATE FIELDS (
-                    MatrixID
-                    SalesOrderType
-                    SalesOrganization
-                    DistributionChannel
-                    OrganizationDivision
-                    SoldToParty
-                    Model
-                    Color
-                    MatrixTypeID
-                    Country
-                )
+                UPDATE FIELDS ( MatrixID SalesOrderType SalesOrganization DistributionChannel OrganizationDivision SoldToParty Model Color MatrixTypeID Country )
                 WITH VALUE #( (
                     %tky                    = <entity>-%tky
                     MatrixID                = matrixid
@@ -652,10 +732,11 @@ CLASS lhc_matrix IMPLEMENTATION.
                 MAPPED DATA(ls_matrix_update_mapped1)
                 REPORTED DATA(ls_matrix_update_reported1).
 
-*           Variant Management
+*           Variant Management Data:
+
             MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
                 ENTITY Matrix
-                UPDATE FIELDS ( Hidden00 Hidden01 Hidden02 Hidden03 Hidden04 Hidden05 Hidden06 Hidden07 Hidden08 Hidden09 Hidden10 Hidden11 Hidden12 Hidden13 Hidden14 Hidden15 Hidden16 Hidden17 Hidden18 Hidden19 Hidden20 Hidden21 )
+                UPDATE FIELDS ( Hidden00 Hidden01 Hidden02 Hidden03 Hidden04 Hidden05 Hidden06 Hidden07 Hidden08 Hidden09 Hidden10 Hidden11 Hidden12 Hidden13 Hidden14 Hidden15 Hidden16 Hidden17 Hidden18 Hidden19 Hidden20 Hidden21 Hidden22 )
                 WITH VALUE #( (
                     %tky     = <entity>-%tky
                     Hidden00 = abap_false
@@ -680,100 +761,49 @@ CLASS lhc_matrix IMPLEMENTATION.
                     Hidden19 = abap_true
                     Hidden20 = abap_true
                     Hidden21 = abap_true
+                    Hidden22 = abap_true
                 ) )
                 FAILED DATA(ls_matrix_update_failed2)
                 MAPPED DATA(ls_matrix_update_mapped2)
                 REPORTED DATA(ls_matrix_update_reported2).
 
-*    *       Create Size Head Table
-*            MODIFY ENTITY IN LOCAL MODE zi_matrix_005
-*              CREATE BY \_Sizehead AUTO FILL CID
-*              FIELDS ( MatrixUUID SizeID Back a BackSizeID )
-*              WITH VALUE #( (
-*                MatrixUUID = <entity>-MatrixUUID
-*                %target = VALUE #( (
-*                    MatrixUUID = <entity>-MatrixUUID
-*                    Back        = '0'
-*                    a           = '001'
-*                    BackSizeID  = '0'
-*                ) )
-*              ) )
-*              FAILED DATA(ls_sizehead_create_failed1)
-*              MAPPED DATA(ls_sizehead_create_mapped1)
-*              REPORTED DATA(ls_sizehead_create_reported1).
-*
-*            MODIFY ENTITY IN LOCAL MODE zi_matrix_005
-*              CREATE BY \_Sizehead AUTO FILL CID
-*              FIELDS ( MatrixUUID SizeID Back a BackSizeID )
-*              WITH VALUE #( (
-*                MatrixUUID = key-MatrixUUID
-*                %target = VALUE #( (
-*                    MatrixUUID = key-MatrixUUID
-*                    SizeID      = 2
-*                    Back        = '0'
-*                    a           = '001'
-*                    BackSizeID  = '0'
-*                ) )
-*              ) )
-*              FAILED DATA(ls_sizehead_create_failed2)
-*              MAPPED DATA(ls_sizehead_create_mapped2)
-*              REPORTED DATA(ls_sizehead_create_reported2).
-*
-*    *       Create Size Table
-*            MODIFY ENTITY IN LOCAL MODE zi_matrix_005
-*              CREATE BY \_Size AUTO FILL CID
-*              FIELDS ( MatrixUUID SizeID Back BackSizeID )
-*              WITH VALUE #( (
-*                %tky = <entity>-%tky
-*                MatrixUUID = <entity>-MatrixUUID
-*                %target = VALUE #( (
-*                    MatrixUUID = <entity>-MatrixUUID
-*                    SizeID      = 1
-*                    Back        = '0'
-*                    BackSizeID  = '0'
-*                ) )
-*              ) )
-*              FAILED DATA(it_size_create_failed)
-*              MAPPED DATA(it_size_create_mapped)
-*              REPORTED DATA(it_size_create_reported).
+*           Links to Master Data:
 
-*    *       Create Size Table:
-*
-*    *       Read Matrix
-*            READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
-*                ENTITY Matrix
-*                FROM VALUE #( ( %tky = <entity>-%tky ) )
-*                RESULT DATA(it_matrix_result)
-*                REPORTED DATA(ls_matrix_read_reported).
-*
-*            LOOP AT it_matrix_result INTO DATA(wa_matrix_result).
-*
-*    *           Populate the size table (field Back only)
-*                APPEND VALUE #( %is_draft = 01 MatrixUUID = <entity>-MatrixUUID %target = VALUE #( (
-*                    MatrixUUID = wa_matrix_result-MatrixUUID SizeID = 1 Back = '0' ) ) ) TO it_size_create.
-*
-*                " Create Size Table
-*                MODIFY ENTITY IN LOCAL MODE zi_matrix_005
-*                  CREATE BY \_Size AUTO FILL CID
-*                  FIELDS ( MatrixUUID SizeID Back )
-*                  WITH it_size_create
-*                  FAILED DATA(it_size_create_failed)
-*                  MAPPED DATA(it_size_create_mapped)
-*                  REPORTED DATA(it_size_create_reported).
-*
-*            ENDLOOP.
-*
-*    *       Set Link to Customer
-*            LOOP AT it_matrix_result INTO wa_matrix_result.
-*                DATA(customerURL) = |/ui#Customer-displayFactSheet?sap-ui-tech-hint=GUI&/C_CustomerOP('| && condense( val = |{ wa_matrix_result-soldtoparty ALPHA = OUT }| ) && |')|.
-*                MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
-*                    ENTITY Matrix
-*                    UPDATE FIELDS ( CustomerURL )
-*                    WITH VALUE #( (
-*                        %key        = <entity>-%key
-*                        CustomerURL = customerURL
-*                    ) ).
-*            ENDLOOP.
+*           Set Model Ref URL
+            DATA(modelRef)          = |Link|.
+            DATA(modelRefURL)       = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvsxysDDICxCuCxsxysDDICDDDEC77nWsacXY%60sDDI777777ngXsacXY%60sDDI77DDDE77ngVsacXY%60sDDI&sap-ui-language=EN&sap-client=080|.
+
+*           Set Color Ref URL
+            DATA(colorRef)          = |Link|.
+            DATA(colorRefURL)       = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvswsDDICxCuCxswsDDICDDDEC77nWsWc%60cfsDDI777777ngXsWc%60cfsDDI77DDDE77ngVsWc%60cfsDDI&sap-ui-language=EN&sap-client=080|.
+
+*           Set Country Ref URL
+            DATA(countryRef)        = |Link|.
+            DATA(countryRefURL)     = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvswsDDICxCuCxswsDDICDDDEC77nWsWcibhfmsDDI777777ngXsWcibhfmsDDI77DDDE77ngVsWcibhfmsDDI&sap-ui-language=EN&sap-client=080|.
+
+*           Set Matrix Type URL
+            DATA(matrixTypeRef)     = |Link|.
+            DATA(matrixTypeRefURL)  = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvsu%7DysDDICxCuCxsu%7DysDDICDDDEC77nWsaUhf%5DlhmdYsDDI77sVuwg%7DyTTsWg%7Dy77nWsVUW_g%5DnYsDDITTnWsWidg%5DnYsDDI77|
+&&
+                                      |ngXsaUhf%5DlhmdYsDDI77DDDE77ngVsaUhf%5DlhmdYsDDI&sap-ui-language=EN&sap-client=080|.
+
+            MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+                ENTITY Matrix
+                UPDATE FIELDS ( ModelRef ModelRefURL ColorRef ColorRefURL CountryRef CountryRefURL MatrixTypeRef MatrixTypeRefURL )
+                WITH VALUE #( (
+                    %tky                = <entity>-%tky
+                    ModelRef            = modelRef
+                    ModelRefURL         = modelRefURL
+                    ColorRef            = colorRef
+                    ColorRefURL         = colorRefURL
+                    CountryRef          = countryRef
+                    CountryRefURL       = countryRefURL
+                    MatrixTypeRef       = matrixTypeRef
+                    MatrixTypeRefURL    = matrixTypeRefURL
+                ) )
+                FAILED DATA(ls_matrix_update_failed3)
+                MAPPED DATA(ls_matrix_update_mapped3)
+                REPORTED DATA(ls_matrix_update_reported3).
 
         ENDIF.
 
@@ -796,7 +826,7 @@ CLASS lhc_matrix IMPLEMENTATION.
 
     DATA cid TYPE string.
 
-    DATA plant              TYPE string. " VALUE '1000'.
+    DATA plant              TYPE string.
     DATA model              TYPE string.
     DATA color              TYPE string.
     DATA cupsize            TYPE string.
@@ -823,86 +853,110 @@ CLASS lhc_matrix IMPLEMENTATION.
         APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-success text = 'Activate.' ) ) TO reported-matrix.
 
         IF ( <entity>-%is_draft = '00' ). " Saved
+
+*           Disable Copy Color Mode
+            MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+                ENTITY Matrix
+                UPDATE FIELDS ( Copying )
+                WITH VALUE #( (
+                    %is_draft           = <entity>-%is_draft
+                    %key                = <entity>-%key
+                    Copying             = abap_false
+                ) )
+                FAILED DATA(ls_failed)
+                MAPPED DATA(ls_mapped)
+                REPORTED DATA(ls_reported).
+
+*           Read Actual Matrix
+            SELECT SINGLE * FROM zmatrix_005  WHERE ( matrixuuid = @<entity>-MatrixUUID ) INTO @DATA(wa_matrix).
+
+*           Read Matrix Draft
+            SELECT SINGLE * FROM zmatrix_005d WHERE ( matrixuuid = @<entity>-MatrixUUID ) INTO @DATA(wa_matrix_draft).
+
+*           Set Plant (for ATP check)
+            DATA(salesOrganization) = |{ wa_matrix_draft-SalesOrganization ALPHA = IN }|. " 1000
+
+*           Set Sold To Party
+            DATA(soldToParty)       = |{ wa_matrix_draft-SoldToParty ALPHA = IN }|. " '0010100014'
+
+*           Set Customer URL
+            DATA(customerURL)       = |/ui#Customer-displayFactSheet?sap-ui-tech-hint=GUI&/C_CustomerOP('| && condense( val = |{ wa_matrix_draft-soldtoparty ALPHA = OUT }| ) && |')|.
+
+*           Set Model Ref URL
+            DATA(modelRef)          = |Link|.
+            DATA(modelRefURL)       = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvsxysDDICxCuCxsxysDDICDDDEC77nWsacXY%60sDDI777777ngXsacXY%60sDDI77DDDE77ngVsacXY%60sDDI&sap-ui-language=EN&sap-client=080|.
+
+*           Set Color Ref URL
+            DATA(colorRef)          = |Link|.
+            DATA(colorRefURL)       = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvswsDDICxCuCxswsDDICDDDEC77nWsWc%60cfsDDI777777ngXsWc%60cfsDDI77DDDE77ngVsWc%60cfsDDI&sap-ui-language=EN&sap-client=080|.
+
+*           Set Country Ref URL
+            DATA(countryRef)        = |Link|.
+            DATA(countryRefURL)     = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvswsDDICxCuCxswsDDICDDDEC77nWsWcibhfmsDDI777777ngXsWcibhfmsDDI77DDDE77ngVsWcibhfmsDDI&sap-ui-language=EN&sap-client=080|.
+
+*           Set Matrix Type URL
+            DATA(matrixTypeRef)     = |Link|.
+            DATA(matrixTypeRefURL)  = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvsu%7DysDDICxCuCxsu%7DysDDICDDDEC77nWsaUhf%5DlhmdYsDDI77sVuwg%7DyTTsWg%7Dy77nWsVUW_g%5DnYsDDITTnWsWidg%5DnYsDDI77| &&
+                                      |ngXsaUhf%5DlhmdYsDDI77DDDE77ngVsaUhf%5DlhmdYsDDI&sap-ui-language=EN&sap-client=080|.
+
+*           For fixing old matrix
+            DATA(hidden22) = abap_true.
+            IF ( ( <entity>-Model IS INITIAL ) OR ( <entity>-Color IS INITIAL ) ).
+                hidden22 = abap_false.
+            ENDIF.
+
+            MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+                ENTITY Matrix
+                UPDATE FIELDS ( CustomerURL ModelRef ModelRefURL ColorRef ColorRefURL CountryRef CountryRefURL MatrixTypeRef MatrixTypeRefURL SoldToParty Hidden22 )
+                WITH VALUE #( (
+                    %is_draft           = is_draft
+                    %key                = <entity>-%key
+                    CustomerURL         = customerURL
+                    ModelRef            = modelRef
+                    ModelRefURL         = modelRefURL
+                    ColorRef            = colorRef
+                    ColorRefURL         = colorRefURL
+                    CountryRef          = countryRef
+                    CountryRefURL       = countryRefURL
+                    MatrixTypeRef       = matrixTypeRef
+                    MatrixTypeRefURL    = matrixTypeRefURL
+                    SoldToParty         = soldToParty
+                    Hidden22            = hidden22 " for fixing old matrix
+                ) )
+                FAILED DATA(ls_failed1)
+                MAPPED DATA(ls_mapped1)
+                REPORTED DATA(ls_reported1).
+
+            IF ( <entity>-Copying = abap_true ). " Copy Color
+*               If model changed - do not generate items (change scheme instead)
+                IF ( wa_matrix-model <> wa_matrix_draft-model ).
+                    RETURN.
+                ENDIF.
+            ELSE. " Default Behavior
+*               If model/color changed - do not generate items (change scheme instead)
+                IF ( ( wa_matrix-model <> wa_matrix_draft-model ) OR ( wa_matrix-color <> wa_matrix_draft-color ) ).
+                    RETURN.
+                ENDIF.
+            ENDIF.
+
+*           If model/color invalid - do not generate any items
+*            IF ( ( <entity>-Model IS INITIAL ) OR ( <entity>-Color IS INITIAL ) ).
+*                APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'Model/Color invalid - Fix Data.' ) ) TO reported-matrix.
+*                RETURN.
+*            ENDIF.
+
+*           Generate Items - Convert Sizes To Items
+            sizes_to_items( EXPORTING   is_draft        = <entity>-%is_draft
+                                        i_matrixuuid    = <entity>-MatrixUUID
+                                        i_model         = <entity>-Model
+                                        i_color         = <entity>-Color ).
+
+            " After All - Refresh Items (Side Effect on _Item)
+
         ENDIF.
 
         IF ( <entity>-%is_draft = '01' ). " Draft
         ENDIF.
-
-*       Read Actual Matrix
-        SELECT SINGLE * FROM zmatrix_005  WHERE ( matrixuuid = @<entity>-MatrixUUID ) INTO @DATA(wa_matrix).
-
-*       Read Matrix Draft
-        SELECT SINGLE * FROM zmatrix_005d WHERE ( matrixuuid = @<entity>-MatrixUUID ) INTO @DATA(wa_matrix_draft).
-
-*       Set Plant (for ATP check)
-        DATA(salesOrganization) = |{ wa_matrix_draft-SalesOrganization ALPHA = IN }|. " 1000
-
-*       Set Sold To Party
-        DATA(soldToParty)       = |{ wa_matrix_draft-SoldToParty ALPHA = IN }|. " '0010100014'
-
-*       Set Customer URL
-        DATA(customerURL)       = |/ui#Customer-displayFactSheet?sap-ui-tech-hint=GUI&/C_CustomerOP('| && condense( val = |{ wa_matrix_draft-soldtoparty ALPHA = OUT }| ) && |')|.
-
-*       Set Model Ref URL
-        DATA(modelRef)          = |Link|.
-        DATA(modelRefURL)       = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvsxysDDICxCuCxsxysDDICDDDEC77nWsacXY%60sDDI777777ngXsacXY%60sDDI77DDDE77ngVsacXY%60sDDI&sap-ui-language=EN&sap-client=080|.
-
-*       Set Color Ref URL
-        DATA(colorRef)          = |Link|.
-        DATA(colorRefURL)       = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvswsDDICxCuCxswsDDICDDDEC77nWsWc%60cfsDDI777777ngXsWc%60cfsDDI77DDDE77ngVsWc%60cfsDDI&sap-ui-language=EN&sap-client=080|.
-
-*       Set Country Ref URL
-        DATA(countryRef)        = |Link|.
-        DATA(countryRefURL)     = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvswsDDICxCuCxswsDDICDDDEC77nWsWcibhfmsDDI777777ngXsWcibhfmsDDI77DDDE77ngVsWcibhfmsDDI&sap-ui-language=EN&sap-client=080|.
-
-*       Set Matrix Type URL
-        DATA(matrixTypeRef)     = |Link|.
-*        DATA(matrixTypeRefURL)  = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=C%C2%87u%C2%84C%C2%83%C2%84%C2%89C%C2%83xu%C2%88uHC%C2%87u%C2%84C%C2%8E%C2%87vs%C2%81u%C2%88%C2%86%7D%C2%8C%C2%88%C2%8D%C2%84ysDDIC| &&
-*                                  |%C2%87%C2%86%C2%8AxC%C2%87u%C2%84C%C2%8E%C2%87xs%C2%81u%C2%88%C2%86%7D%C2%8C%C2%88%C2%8D%C2%84ysDDICDDDEC77nWsaUhf%5DlhmdYsDDI77sVuw%7Fg%7D%C2%8EyTTsW%C2%89%C2%84g%7D%C2%8Ey77nWsVUW_g| &&
-*                                  |%5DnYsDDITTnWsWidg%5DnYsDDI77ngXsaUhf%5DlhmdYsDDI77DDDE77ngVsaUhf%5DlhmdYsDDI&sap-ui-language=EN&sap-client=080|.
-        DATA(matrixTypeRefURL)  = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvsu%7DysDDICxCuCxsu%7DysDDICDDDEC77nWsaUhf%5DlhmdYsDDI77sVuwg%7DyTTsWg%7Dy77nWsVUW_g%5DnYsDDITTnWsWidg%5DnYsDDI77| &&
-                                  |ngXsaUhf%5DlhmdYsDDI77DDDE77ngVsaUhf%5DlhmdYsDDI&sap-ui-language=EN&sap-client=080|.
-
-        MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
-            ENTITY Matrix
-            UPDATE FIELDS ( CustomerURL ModelRef ModelRefURL ColorRef ColorRefURL CountryRef CountryRefURL MatrixTypeRef MatrixTypeRefURL SoldToParty )
-            WITH VALUE #( (
-                %is_draft           = is_draft
-                %key                = <entity>-%key
-                CustomerURL         = customerURL
-                ModelRef            = modelRef
-                ModelRefURL         = modelRefURL
-                ColorRef            = colorRef
-                ColorRefURL         = colorRefURL
-                CountryRef          = countryRef
-                CountryRefURL       = countryRefURL
-                MatrixTypeRef       = matrixTypeRef
-                MatrixTypeRefURL    = matrixTypeRefURL
-                SoldToParty         = soldToParty
-            ) )
-            FAILED DATA(ls_failed)
-            MAPPED DATA(ls_mapped)
-            REPORTED DATA(ls_reported).
-
-*       If model/color changed - do not generate items
-        IF ( ( wa_matrix-model <> wa_matrix_draft-model ) OR ( wa_matrix-color <> wa_matrix_draft-color ) ).
-*            APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-success text = 'Model/Color changed.' ) ) TO reported-matrix.
-            RETURN.
-        ENDIF.
-
-*       If model/color invalid - do not generate items
-*        IF ( ( <entity>-Model IS INITIAL ) OR ( <entity>-Color IS INITIAL ) ).
-*            APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'Model/Color invalid - Fix Data.' ) ) TO reported-matrix.
-*            RETURN.
-*        ENDIF.
-
-*       Generate Items - Convert Sizes To Items
-        sizes_to_items( EXPORTING   is_draft        = <entity>-%is_draft
-                                    i_matrixuuid    = <entity>-MatrixUUID
-                                    i_model         = <entity>-Model
-                                    i_color         = <entity>-Color ).
-
-        " And do refresh (Side Effect on _Item)
 
     ENDLOOP.
 
@@ -923,31 +977,31 @@ CLASS lhc_matrix IMPLEMENTATION.
         ENDIF.
 
         IF ( <entity>-%is_draft = '01' ). " Draft
-
-*           Select Actual Model
-            SELECT SINGLE * FROM zi_model_005 WHERE ( ModelID = @<entity>-model ) INTO @DATA(wa_model).
-
-*           Update Matrix Type
-            MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
-                ENTITY Matrix
-                UPDATE FIELDS ( MatrixTypeID )
-                WITH VALUE #( (
-                    %tky            = <entity>-%tky
-                    MatrixTypeID    = wa_model-MatrixTypeID
-                ) )
-                FAILED DATA(ls_matrix_update_failed)
-                MAPPED DATA(ls_matrix_update_mapped)
-                REPORTED DATA(ls_matrix_update_reported).
-
         ENDIF.
+
+*       Select Actual Model
+        SELECT SINGLE * FROM zi_model_005 WHERE ( ModelID = @<entity>-model ) INTO @DATA(wa_model).
+
+*       Update Matrix Type
+        MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+            ENTITY Matrix
+            UPDATE FIELDS ( MatrixTypeID )
+            WITH VALUE #( (
+                %tky            = <entity>-%tky
+                MatrixTypeID    = wa_model-MatrixTypeID
+            ) )
+            FAILED DATA(ls_matrix_update_failed)
+            MAPPED DATA(ls_matrix_update_mapped)
+            REPORTED DATA(ls_matrix_update_reported).
 
     ENDLOOP.
 
   ENDMETHOD. " on_model_modify
 
   METHOD on_scheme_save. " on saving scheme (Model + Color + Matrix Type + Country) after modify
+
     DATA it_sizehead_create TYPE TABLE FOR CREATE zi_matrix_005\_Sizehead. " Size Head
-    DATA it_size_create TYPE TABLE FOR CREATE zi_matrix_005\_Size. " Size
+    DATA it_size_create     TYPE TABLE FOR CREATE zi_matrix_005\_Size. " Size
 
     DATA ls_sizehead1 TYPE zi_sizehead_005.
     DATA ls_sizehead2 TYPE zi_sizehead_005.
@@ -1010,8 +1064,16 @@ CLASS lhc_matrix IMPLEMENTATION.
                 ENDIF.
             ENDIF.
 
-            IF ( ( wa_matrix-model = wa_matrix_draft-model ) AND ( wa_matrix-color = wa_matrix_draft-color ) AND ( wa_matrix-matrixtypeid = wa_matrix_draft-matrixtypeid ) AND ( wa_matrix-country = wa_matrix_draft-country ) ). " No change
-                RETURN.
+            IF ( <entity>-Copying = abap_true ). " Copy Color
+*               If Only Color Changed
+                IF ( ( wa_matrix-model = wa_matrix_draft-model ) AND ( wa_matrix-color <> wa_matrix_draft-color ) AND ( wa_matrix-matrixtypeid = wa_matrix_draft-matrixtypeid ) AND ( wa_matrix-country = wa_matrix_draft-country ) ).
+                    RETURN.
+                ENDIF.
+            ELSE. " Default Behavior
+*               If No Change
+                IF ( ( wa_matrix-model = wa_matrix_draft-model ) AND ( wa_matrix-color = wa_matrix_draft-color ) AND ( wa_matrix-matrixtypeid = wa_matrix_draft-matrixtypeid ) AND ( wa_matrix-country = wa_matrix_draft-country ) ).
+                    RETURN.
+                ENDIF.
             ENDIF.
 
 *           Read Actual Size Table
@@ -1058,6 +1120,7 @@ CLASS lhc_matrix IMPLEMENTATION.
             DATA(hidden19) = abap_true.
             DATA(hidden20) = abap_true.
             DATA(hidden21) = abap_true.
+            DATA(hidden22) = abap_true.
 
             IF ( v_matrixtypeid = 'SLIP' ).
                 IF ( v_country = 'FR' ).
@@ -1109,15 +1172,17 @@ CLASS lhc_matrix IMPLEMENTATION.
                 ELSE.
                     hidden20 = abap_false.
                 ENDIF.
-            ELSE. " OhneGr (Default)
-                hidden21 = abap_false.
+            ELSEIF ( ( v_model IS NOT INITIAL ) AND ( v_color IS NOT INITIAL ) ).
+                hidden21 = abap_false. " OhneGr (Default)
+            ELSE.
+                hidden22 = abap_false. " Dummy
             ENDIF.
 
             MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
                 ENTITY Matrix
-                UPDATE FIELDS ( Hidden00 Hidden01 Hidden02 Hidden03 Hidden04 Hidden05 Hidden06 Hidden07 Hidden08 Hidden09 Hidden10 Hidden11 Hidden12 Hidden13 Hidden14 Hidden15 Hidden16 Hidden17 Hidden18 Hidden19 Hidden20 Hidden21 )
+                UPDATE FIELDS ( Hidden00 Hidden01 Hidden02 Hidden03 Hidden04 Hidden05 Hidden06 Hidden07 Hidden08 Hidden09 Hidden10 Hidden11 Hidden12 Hidden13 Hidden14 Hidden15 Hidden16 Hidden17 Hidden18 Hidden19 Hidden20 Hidden21 Hidden22 )
                 WITH VALUE #( (
-                    %key     = <entity>-%key
+                    %tky     = <entity>-%tky
                     Hidden00 = hidden00
                     Hidden01 = hidden01
                     Hidden02 = hidden02
@@ -1140,6 +1205,7 @@ CLASS lhc_matrix IMPLEMENTATION.
                     Hidden19 = hidden19
                     Hidden20 = hidden20
                     Hidden21 = hidden21
+                    Hidden22 = hidden22
                 ) )
                 FAILED DATA(matrix_update_failed2)
                 MAPPED DATA(matrix_update_mapped2)
@@ -1313,14 +1379,16 @@ CLASS lhc_matrix IMPLEMENTATION.
                 MAPPED DATA(ls_sizehead_create_mapped)
                 REPORTED DATA(ls_sizehead_create_reported).
 
-            IF ( lt_cupsize[] IS INITIAL ).
-                APPEND VALUE #( CupSizeID = '0' ) TO lt_cupsize.
+            IF ( ( v_model IS NOT INITIAL ) AND ( v_color IS NOT INITIAL ) ).
+                IF ( lt_cupsize[] IS INITIAL ).
+                    APPEND VALUE #( CupSizeID = '0' ) TO lt_cupsize.
+                ENDIF.
+                LOOP AT lt_cupsize INTO DATA(ls_cupsize).
+                    tabix = sy-tabix.
+                    APPEND VALUE #( MatrixUUID = <entity>-MatrixUUID %target = VALUE #( (
+                        MatrixUUID = wa_matrix_draft-MatrixUUID SizeID = tabix Back = ls_cupsize-CupSizeID BackSizeID = ls_cupsize-CupSizeID ) ) ) TO it_size_create.
+                ENDLOOP.
             ENDIF.
-            LOOP AT lt_cupsize INTO DATA(ls_cupsize).
-                tabix = sy-tabix.
-                APPEND VALUE #( MatrixUUID = <entity>-MatrixUUID %target = VALUE #( (
-                    MatrixUUID = wa_matrix_draft-MatrixUUID SizeID = tabix Back = ls_cupsize-CupSizeID BackSizeID = ls_cupsize-CupSizeID ) ) ) TO it_size_create.
-            ENDLOOP.
 
 *           Restore Size Table values from Item Table :
 
@@ -1520,16 +1588,37 @@ CLASS lhc_matrix IMPLEMENTATION.
 
         IF ( <entity>-%is_draft = '01' ). " Draft
 
+*           Disable Copy Color Mode
+            MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+                ENTITY Matrix
+                UPDATE FIELDS ( Copying )
+                WITH VALUE #( (
+                    %is_draft           = <entity>-%is_draft
+                    %key                = <entity>-%key
+                    Copying             = abap_false
+                ) )
+                FAILED DATA(ls_failed)
+                MAPPED DATA(ls_mapped)
+                REPORTED DATA(ls_reported).
+
 *           Read Actual Matrix
             SELECT SINGLE * FROM zmatrix_005  WHERE ( matrixuuid = @<entity>-MatrixUUID ) INTO @DATA(wa_matrix).
 
 *           Read Matrix Draft
             SELECT SINGLE * FROM zmatrix_005d WHERE ( matrixuuid = @<entity>-MatrixUUID ) INTO @DATA(wa_matrix_draft).
 
-*           If model/color changed - do not generate items
-            IF ( ( wa_matrix-model <> wa_matrix_draft-model ) OR ( wa_matrix-color <> wa_matrix_draft-color ) ).
-                APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'Model/Color changed - Save Data.' ) ) TO reported-matrix.
-                RETURN.
+            IF ( <entity>-Copying = abap_true ). " Copy Color
+*               If model/color changed - do not generate items (change scheme instead)
+                IF ( ( <entity>-model <> wa_matrix-model ) ).
+                    APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'Model changed - Save Data.' ) ) TO reported-matrix.
+                    RETURN.
+                ENDIF.
+            ELSE. " Default Behavior
+*               If model/color changed - do not generate items (change scheme instead)
+                IF ( ( <entity>-model <> wa_matrix-model ) OR ( <entity>-color <> wa_matrix-color ) ).
+                    APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'Model/Color changed - Save Data.' ) ) TO reported-matrix.
+                    RETURN.
+                ENDIF.
             ENDIF.
 
         ENDIF.
@@ -1548,6 +1637,61 @@ CLASS lhc_matrix IMPLEMENTATION.
     ENDLOOP.
 
   ENDMETHOD. " update_items
+
+* Copy Color
+  METHOD copy_color.
+
+   "read transfered instances
+    READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+      ENTITY Matrix
+      ALL FIELDS
+      WITH CORRESPONDING #( keys )
+      RESULT DATA(entities).
+
+    LOOP AT entities ASSIGNING FIELD-SYMBOL(<entity>).
+
+        IF ( <entity>-%is_draft = '00' ). " Saved
+            APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'No Color Changed.' ) ) TO reported-matrix.
+        ENDIF.
+
+        IF ( <entity>-%is_draft = '01' ). " Draft
+
+*           Enable Copy Color Mode
+            MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+                ENTITY Matrix
+                UPDATE FIELDS ( Copying )
+                WITH VALUE #( (
+                    %is_draft           = <entity>-%is_draft
+                    %key                = <entity>-%key
+                    Copying             = abap_true
+                ) )
+                FAILED DATA(ls_failed)
+                MAPPED DATA(ls_mapped)
+                REPORTED DATA(ls_reported).
+
+*           Read Actual Matrix
+            SELECT SINGLE * FROM zmatrix_005  WHERE ( matrixuuid = @<entity>-MatrixUUID ) INTO @DATA(wa_matrix).
+
+*           Read Matrix Draft
+            SELECT SINGLE * FROM zmatrix_005d WHERE ( matrixuuid = @<entity>-MatrixUUID ) INTO @DATA(wa_matrix_draft).
+
+*           If model changed - do not generate any items (have to change scheme first)
+            IF ( <entity>-model <> wa_matrix-model ).
+                APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'Model changed - Save Data.' ) ) TO reported-matrix.
+            ELSE.
+*               Generate Items - Convert Sizes To Items
+                sizes_to_items( EXPORTING   is_draft        = <entity>-%is_draft
+                                            i_matrixuuid    = <entity>-MatrixUUID
+                                            i_model         = <entity>-Model
+                                            i_color         = <entity>-Color ).
+            ENDIF.
+
+        ENDIF.
+
+    ENDLOOP.
+
+  ENDMETHOD. " copy_color
+
 
 * Get Availability for ATP Check
   METHOD get_stock_availability.
@@ -1678,6 +1822,11 @@ CLASS lhc_matrix IMPLEMENTATION.
 
 * Convert Sizes to Items
   METHOD sizes_to_items.
+*      IMPORTING
+*        value(is_draft)             TYPE abp_behv_flag
+*        value(i_matrixuuid)         TYPE zi_matrix_005-MatrixUUID
+*        value(i_model)              TYPE zi_matrix_005-Model
+*        value(i_color)              TYPE zi_matrix_005-Color.
 
     DATA it_item_create TYPE TABLE FOR CREATE zi_matrix_005\_Item. " Item
     DATA wa_item_create LIKE LINE OF it_item_create.
@@ -1715,7 +1864,7 @@ CLASS lhc_matrix IMPLEMENTATION.
 *   Read Size Table (Draft)
 *    SELECT * FROM zsize_005d WHERE ( MatrixUUID = @i_matrixuuid ) ORDER By back INTO TABLE @DATA(it_size).
 
-*   Read Size Table
+*   Read Size Table (it always reads changed data)
     READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
         ENTITY Matrix
         BY \_Size
@@ -1724,6 +1873,8 @@ CLASS lhc_matrix IMPLEMENTATION.
         FAILED DATA(ls_failed1)
         REPORTED DATA(ls_reported1).
 
+    SORT lt_size STABLE BY SizeID.
+
 *   Find max item id
     SELECT MAX( ItemID ) FROM zitem_005  WHERE ( MatrixUUID = @i_matrixuuid ) INTO @DATA(maxid).
     SELECT MAX( ItemID ) FROM zitem_005d WHERE ( MatrixUUID = @i_matrixuuid ) INTO @DATA(maxid_draft).
@@ -1731,8 +1882,10 @@ CLASS lhc_matrix IMPLEMENTATION.
         maxid = maxid_draft.
     ENDIF.
 
-    model       = wa_matrix-Model.
-    color       = wa_matrix-Color.
+*    model       = wa_matrix-Model.
+*    color       = wa_matrix-Color.
+    model       = i_model.
+    color       = i_color.
 
 *   Delete Items with the same Model and Color (in Draft)
 
@@ -2261,57 +2414,6 @@ CLASS lhc_matrix IMPLEMENTATION.
 *    SORT By Product and Quantity
     SORT lt_item2 STABLE BY Product Quantity.
 
-**   Delete Item Table
-*    LOOP AT lt_item2 INTO DATA(ls_item2).
-*        MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
-*            ENTITY Item
-*            DELETE FROM VALUE #( (
-*                %is_draft   = is_draft
-*                ItemID      = ls_item2-ItemID
-*                MatrixUUID  = ls_item2-MatrixUUID
-*            ) )
-*            FAILED DATA(ls_delete_failed2)
-*            MAPPED DATA(ls_delete_mapped2)
-*            REPORTED DATA(ls_delete_reported2).
-*    ENDLOOP.
-*
-*    CLEAR it_item_create[].
-*    LOOP AT lt_item2 INTO ls_item2.
-*        APPEND VALUE #(
-*            %is_draft  = is_draft
-*            MatrixUUID = i_matrixuuid
-*            %target = VALUE #( (
-*                %is_draft       = is_draft
-*                %cid            = sy-tabix
-*                ItemID          = sy-tabix
-*                MatrixUUID      = ls_item2-MatrixUUID
-*                Model           = ls_item2-Model
-*                Color           = ls_item2-Color
-*                Backsize        = ls_item2-Backsize
-*                Cupsize         = ls_item2-Cupsize
-*                Product         = ls_item2-Product
-*                Quantity        = ls_item2-Quantity
-*                Stock           = ls_item2-Stock
-*                AvailableStock  = ls_item2-AvailableStock
-*                Availability    = ls_item2-Availability
-*                Criticality01   = ls_item2-Criticality01
-*                ProductURL      = ls_item2-ProductURL
-*            ) )
-*        ) TO it_item_create.
-*    ENDLOOP.
-*
-**    " Create New (renumbered) Items
-*    MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
-*        ENTITY Matrix
-*        CREATE BY \_Item
-*        FIELDS (
-*            ItemID MatrixUUID Model Color Backsize Cupsize Product Quantity Stock AvailableStock Availability Criticality01 ProductURL
-*        )
-*        WITH it_item_create
-*        FAILED DATA(ls_failed3)
-*        MAPPED DATA(ls_mapped3)
-*        REPORTED DATA(ls_reported3).
-
     LOOP AT lt_item2 INTO DATA(ls_item2).
         MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
             ENTITY Item
@@ -2330,6 +2432,192 @@ CLASS lhc_matrix IMPLEMENTATION.
     ENDLOOP.
 
   ENDMETHOD. " sizes_to_items
+
+* Get Sales Order and Update Matrix Items
+  METHOD get_sales_order_internal.
+
+    DATA it_matrix_update   TYPE TABLE FOR UPDATE zi_matrix_005\\Matrix.    " Matrix
+    DATA it_item_create     TYPE TABLE FOR CREATE zi_matrix_005\_Item.      " Item
+    DATA it_size_update     TYPE TABLE FOR UPDATE zi_matrix_005\\Size .     " Size
+    DATA wa_size_update     LIKE LINE OF it_size_update.
+
+    DATA product      TYPE string VALUE ''.
+    DATA quantity     TYPE string VALUE ''.
+    DATA model        TYPE string VALUE ''.
+    DATA color        TYPE string VALUE ''.
+    DATA backsize     TYPE string VALUE ''.
+    DATA cupsize      TYPE string VALUE ''.
+    DATA productURL   TYPE string VALUE ''.
+
+    DATA tabix TYPE sy-tabix.
+
+*   Read Actual Matrix Items
+    READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+        ENTITY Matrix
+        BY \_Item
+        ALL FIELDS WITH VALUE #( ( MatrixUUID = i_matrixuuid ) )
+        RESULT DATA(lt_matrix_item)
+        FAILED DATA(ls_read_failed)
+        REPORTED DATA(ls_read_reported).
+
+    SORT lt_matrix_item STABLE BY ItemID.
+
+*   Delete Actual Matrix Items
+    LOOP AT lt_matrix_item INTO DATA(ls_matrix_item).
+        MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+            ENTITY Item
+            DELETE FROM VALUE #( ( MatrixUUID = i_matrixuuid ItemID = ls_matrix_item-ItemID ) )
+            FAILED DATA(ls_delete_failed)
+            MAPPED DATA(ls_delete_mapped)
+            REPORTED DATA(ls_delete_reported).
+    ENDLOOP.
+
+*   Read Sales Order Items
+    READ ENTITIES OF i_salesordertp
+        ENTITY SalesOrder
+        BY \_Item
+        ALL FIELDS WITH VALUE #( ( salesorder = i_salesorderid ) )
+        RESULT DATA(lt_salesorder_item)
+        FAILED DATA(ls_failed_read)
+        REPORTED DATA(ls_reported_read).
+
+    SORT lt_salesorder_item STABLE BY SalesOrderItem.
+
+*   Create New Matrix Items
+    LOOP AT lt_salesorder_item INTO DATA(ls_salesorder_item).
+
+        product   = ls_salesorder_item-product.
+        SPLIT product AT '-' INTO model color cupsize backsize.
+        quantity = round( val  = ls_salesorder_item-RequestedQuantity dec  = 0 ).
+        CONDENSE quantity NO-GAPS.
+        productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+
+        APPEND VALUE #(
+            MatrixUUID = i_matrixuuid
+            %target = VALUE #( (
+                %cid       = sy-tabix
+                ItemID     = sy-tabix
+                ItemID2    = sy-tabix
+                Model      = model
+                Color      = color
+                Cupsize    = cupsize
+                Backsize   = backsize
+                Product    = product
+                Quantity   = quantity
+                ProductURL = productURL
+            ) )
+        ) TO it_item_create.
+
+    ENDLOOP.
+
+    MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+        ENTITY Matrix
+        CREATE BY \_Item
+        FIELDS ( ItemID ItemID2 Model Color Cupsize Backsize Product Quantity ProductURL )
+        WITH it_item_create
+        FAILED DATA(ls_item_failed)
+        MAPPED DATA(ls_item_mapped)
+        REPORTED DATA(ls_item_reported).
+
+*   Update Size table from Item table:
+
+*   Read Size Head table
+    READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+        ENTITY Matrix
+        BY \_Sizehead
+        ALL FIELDS WITH VALUE #( ( MatrixUUID = i_matrixuuid ) )
+        RESULT DATA(lt_sizehead)
+        FAILED DATA(ls_failed_sizehead_read)
+        REPORTED DATA(ls_reported_sizehead_read).
+
+    READ TABLE lt_sizehead INTO DATA(ls_sizehead1) WITH KEY SizeID = 1.
+    READ TABLE lt_sizehead INTO DATA(ls_sizehead2) WITH KEY SizeID = 2.
+
+*    OhneGr (Default)
+*    IF ( lt_sizehead IS INITIAL ).
+*        ls_sizehead1-a = '001'.
+*        ls_sizehead2-a = '001'.
+*    ENDIF.
+
+    READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+        ENTITY Matrix
+        BY \_Size
+        ALL FIELDS WITH VALUE #( ( MatrixUUID = i_matrixuuid ) )
+        RESULT DATA(lt_size)
+        FAILED DATA(ls_failed_size_read)
+        REPORTED DATA(ls_reported_size_read).
+
+*   Copy Size table to Size Update table
+    LOOP AT lt_size INTO DATA(wa_size).
+        MOVE-CORRESPONDING wa_size TO wa_size_update.
+        CLEAR wa_size_update-a.
+        CLEAR wa_size_update-b.
+        CLEAR wa_size_update-c.
+        CLEAR wa_size_update-d.
+        CLEAR wa_size_update-e.
+        CLEAR wa_size_update-f.
+        CLEAR wa_size_update-g.
+        CLEAR wa_size_update-h.
+        CLEAR wa_size_update-i.
+        CLEAR wa_size_update-j.
+        CLEAR wa_size_update-k.
+        CLEAR wa_size_update-l.
+        APPEND wa_size_update TO it_size_update.
+    ENDLOOP.
+
+*   Fill Quantities
+    LOOP AT it_item_create INTO DATA(wa_item_create).
+        LOOP AT wa_item_create-%target INTO DATA(target).
+            product = target-Product.
+            SPLIT product AT '-' INTO model color cupsize backsize.
+            IF ( ( model = i_model ) AND ( color = i_color ) ).
+                quantity = target-Quantity.
+                LOOP AT it_size_update INTO wa_size_update.
+                    tabix = sy-tabix.
+                    IF ( cupsize = wa_size_update-Back ).
+                        CASE backsize.
+                            WHEN ls_sizehead2-a.
+                                wa_size_update-a = quantity.
+                            WHEN ls_sizehead2-b.
+                                wa_size_update-b = quantity.
+                            WHEN ls_sizehead2-c.
+                                wa_size_update-c = quantity.
+                            WHEN ls_sizehead2-d.
+                                wa_size_update-d = quantity.
+                            WHEN ls_sizehead2-e.
+                                wa_size_update-e = quantity.
+                            WHEN ls_sizehead2-f.
+                                wa_size_update-f = quantity.
+                            WHEN ls_sizehead2-g.
+                                wa_size_update-g = quantity.
+                            WHEN ls_sizehead2-h.
+                                wa_size_update-h = quantity.
+                            WHEN ls_sizehead2-i.
+                                wa_size_update-i = quantity.
+                            WHEN ls_sizehead2-j.
+                                wa_size_update-j = quantity.
+                            WHEN ls_sizehead2-k.
+                                wa_size_update-k = quantity.
+                            WHEN ls_sizehead2-l.
+                                wa_size_update-l = quantity.
+                        ENDCASE.
+                    ENDIF.
+                    MODIFY it_size_update FROM wa_size_update INDEX tabix.
+                ENDLOOP.
+            ENDIF.
+        ENDLOOP.
+    ENDLOOP.
+
+*   Update Actual Size Table
+    MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+        ENTITY Size
+        UPDATE FIELDS ( a b c d e f g h i j k l )
+        WITH it_size_update
+        MAPPED DATA(ls_size_update_mapped)
+        FAILED DATA(ls_size_update_failed)
+        REPORTED DATA(ls_size_update_reported).
+
+  ENDMETHOD. " get_sales_order_internal
 
 ENDCLASS. " lhc_matrix IMPLEMENTATION.
 

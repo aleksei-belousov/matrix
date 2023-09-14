@@ -43,7 +43,8 @@ annotate entity ZC_SIZE_005 with
                               { qualifier: 'SizeVariant18', position: 10, label: 'Cup / Size', cssDefault.width: '250px' },
                               { qualifier: 'SizeVariant19', position: 10, label: 'Cup / Size', cssDefault.width: '250px' },
                               { qualifier: 'SizeVariant20', position: 10, label: 'Cup / Size', cssDefault.width: '250px' },
-                              { qualifier: 'SizeVariant21', position: 10, label: 'Cup / Size', cssDefault.width: '250px' } ],
+                              { qualifier: 'SizeVariant21', position: 10, label: 'Cup / Size', cssDefault.width: '250px' },
+                              { qualifier: 'SizeVariant22', position: 10, label: 'Cup / Size', cssDefault.width: '250px' } ],
             identification: [ { position: 10, label: '' } ] }
     //@Consumption.hidden: true // it works
     //@Consumption.hidden: #(Boolean) // it does not work
@@ -72,7 +73,8 @@ annotate entity ZC_SIZE_005 with
                               { qualifier: 'SizeVariant18', position: 20, label: '3/2XS', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant19', position: 20, label: '24', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant20', position: 20, label: '60', cssDefault.width: '150px' },
-                              { qualifier: 'SizeVariant21', position: 20, label: '001', cssDefault.width: '150px' } ],
+                              { qualifier: 'SizeVariant21', position: 20, label: '001', cssDefault.width: '150px' },
+                              { qualifier: 'SizeVariant22', position: 20, label: ' ', cssDefault.width: '150px' } ],
             identification: [ { position: 20, label: '' } ] }
     A;
 
@@ -98,7 +100,8 @@ annotate entity ZC_SIZE_005 with
                               { qualifier: 'SizeVariant18', position: 30, label: '4/XS', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant19', position: 30, label: '26', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant20', position: 30, label: '65', cssDefault.width: '150px' },
-                              { qualifier: 'SizeVariant21', position: 30, label: ' ', cssDefault.width: '150px' } ],
+                              { qualifier: 'SizeVariant21', position: 30, label: ' ', cssDefault.width: '150px' },
+                              { qualifier: 'SizeVariant22', position: 30, label: ' ', cssDefault.width: '150px' } ],
             identification: [ { position: 30, label: '' } ] }
     B;
 
@@ -124,7 +127,8 @@ annotate entity ZC_SIZE_005 with
                               { qualifier: 'SizeVariant18', position: 40, label: '5/S', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant19', position: 40, label: '28', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant20', position: 40, label: '70', cssDefault.width: '150px' },
-                              { qualifier: 'SizeVariant21', position: 40, label: ' ', cssDefault.width: '150px' } ],
+                              { qualifier: 'SizeVariant21', position: 40, label: ' ', cssDefault.width: '150px' },
+                              { qualifier: 'SizeVariant22', position: 40, label: ' ', cssDefault.width: '150px' } ],
             identification: [ { position: 40, label: '' } ] }
     C;
 
@@ -150,7 +154,8 @@ annotate entity ZC_SIZE_005 with
                               { qualifier: 'SizeVariant18', position: 50, label: '6/M', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant19', position: 50, label: '30', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant20', position: 50, label: '75', cssDefault.width: '150px' },
-                              { qualifier: 'SizeVariant21', position: 50, label: ' ', cssDefault.width: '150px' } ],
+                              { qualifier: 'SizeVariant21', position: 50, label: ' ', cssDefault.width: '150px' },
+                              { qualifier: 'SizeVariant22', position: 50, label: ' ', cssDefault.width: '150px' } ],
             identification: [ { position: 50, label: '' } ] }
     D;
 
@@ -176,7 +181,8 @@ annotate entity ZC_SIZE_005 with
                               { qualifier: 'SizeVariant18', position: 60, label: '7/L', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant19', position: 60, label: '32', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant20', position: 60, label: '80', cssDefault.width: '150px' },
-                              { qualifier: 'SizeVariant21', position: 60, label: ' ', cssDefault.width: '150px' } ],
+                              { qualifier: 'SizeVariant21', position: 60, label: ' ', cssDefault.width: '150px' },
+                              { qualifier: 'SizeVariant22', position: 60, label: ' ', cssDefault.width: '150px' } ],
             identification: [ { position: 60, label: '' } ] }
     E;
 
@@ -202,7 +208,8 @@ annotate entity ZC_SIZE_005 with
                               { qualifier: 'SizeVariant18', position: 70, label: '8/XL', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant19', position: 70, label: '34', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant20', position: 70, label: '85', cssDefault.width: '150px' },
-                              { qualifier: 'SizeVariant21', position: 70, label: ' ', cssDefault.width: '150px' } ],
+                              { qualifier: 'SizeVariant21', position: 70, label: ' ', cssDefault.width: '150px' },
+                              { qualifier: 'SizeVariant22', position: 70, label: ' ', cssDefault.width: '150px' } ],
             identification: [ { position: 70, label: '' } ] }
     F;
 
@@ -228,7 +235,8 @@ annotate entity ZC_SIZE_005 with
                               { qualifier: 'SizeVariant18', position: 80, label: '9/2XL', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant19', position: 80, label: '36', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant20', position: 80, label: '90', cssDefault.width: '150px' },
-                              { qualifier: 'SizeVariant21', position: 80, label: ' ', cssDefault.width: '150px' } ],
+                              { qualifier: 'SizeVariant21', position: 80, label: ' ', cssDefault.width: '150px' },
+                              { qualifier: 'SizeVariant22', position: 80, label: ' ', cssDefault.width: '150px' } ],
             identification: [ { position: 80, label: '' } ] }
     G;
 
@@ -254,7 +262,8 @@ annotate entity ZC_SIZE_005 with
                               { qualifier: 'SizeVariant18', position: 90, label: '10/3XL', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant19', position: 90, label: '38', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant20', position: 90, label: '95', cssDefault.width: '150px' },
-                              { qualifier: 'SizeVariant21', position: 90, label: ' ', cssDefault.width: '150px' } ],
+                              { qualifier: 'SizeVariant21', position: 90, label: ' ', cssDefault.width: '150px' },
+                              { qualifier: 'SizeVariant22', position: 90, label: ' ', cssDefault.width: '150px' } ],
             identification: [ { position: 90, label: '' } ] }
     H;
 
@@ -280,7 +289,8 @@ annotate entity ZC_SIZE_005 with
                               { qualifier: 'SizeVariant18', position: 100, label: '11/4XL', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant19', position: 100, label: '40', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant20', position: 100, label: '100', cssDefault.width: '150px' },
-                              { qualifier: 'SizeVariant21', position: 100, label: ' ', cssDefault.width: '150px' } ],
+                              { qualifier: 'SizeVariant21', position: 100, label: ' ', cssDefault.width: '150px' },
+                              { qualifier: 'SizeVariant22', position: 100, label: ' ', cssDefault.width: '150px' } ],
             identification: [ { position: 100, label: '' } ] }
     I;
 
@@ -306,7 +316,8 @@ annotate entity ZC_SIZE_005 with
                               { qualifier: 'SizeVariant18', position: 110, label: '12/5XL', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant19', position: 110, label: '42', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant20', position: 110, label: '105', cssDefault.width: '150px' },
-                              { qualifier: 'SizeVariant21', position: 110, label: ' ', cssDefault.width: '150px' } ],
+                              { qualifier: 'SizeVariant21', position: 110, label: ' ', cssDefault.width: '150px' },
+                              { qualifier: 'SizeVariant22', position: 110, label: ' ', cssDefault.width: '150px' } ],
             identification: [ { position: 110, label: '' } ] }
     J;
 
@@ -332,7 +343,8 @@ annotate entity ZC_SIZE_005 with
                               { qualifier: 'SizeVariant18', position: 120, label: '13/6XL', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant19', position: 120, label: '44', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant20', position: 120, label: '110', cssDefault.width: '150px' },
-                              { qualifier: 'SizeVariant21', position: 120, label: ' ', cssDefault.width: '150px' } ],
+                              { qualifier: 'SizeVariant21', position: 120, label: ' ', cssDefault.width: '150px' },
+                              { qualifier: 'SizeVariant22', position: 120, label: ' ', cssDefault.width: '150px' } ],
             identification: [ { position: 120, label: '' } ] }
     K;
 
@@ -358,7 +370,8 @@ annotate entity ZC_SIZE_005 with
                               { qualifier: 'SizeVariant18', position: 130, label: '14/7XL', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant19', position: 130, label: '46', cssDefault.width: '150px' },
                               { qualifier: 'SizeVariant20', position: 130, label: '115', cssDefault.width: '150px' },
-                              { qualifier: 'SizeVariant21', position: 130, label: ' ', cssDefault.width: '150px' } ],
+                              { qualifier: 'SizeVariant21', position: 130, label: ' ', cssDefault.width: '150px' },
+                              { qualifier: 'SizeVariant22', position: 130, label: ' ', cssDefault.width: '150px' } ],
             identification: [ { position: 130, label: '' } ] }
     L;
 

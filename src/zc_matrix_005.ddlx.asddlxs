@@ -208,6 +208,14 @@ annotate entity ZC_MATRIX_005 with
                   type:          #LINEITEM_REFERENCE,
                   position:      30,
                   targetElement: '_Size' },
+                { targetQualifier: 'SizeVariant22',
+                  hidden: #(Hidden22),
+                  label:         'Size',
+                  id:            'Size22',
+                  purpose:       #STANDARD,
+                  type:          #LINEITEM_REFERENCE,
+                  position:      30,
+                  targetElement: '_Size' },
 
                 { id:            'Item',
                   purpose:       #STANDARD,
@@ -216,7 +224,7 @@ annotate entity ZC_MATRIX_005 with
                   position:      40,
                   targetElement: '_Item'}]
 
-    @UI.hidden: true
+//    @UI.hidden: true
     MatrixUUID;
     
 //    @UI: { lineItem:       [ { position: 10, label: 'Matrix ID', importance: #HIGH, cssDefault.width: '300px' } ],
@@ -229,9 +237,10 @@ annotate entity ZC_MATRIX_005 with
             identification: [ { position: 30, label: 'Sales Order ID', cssDefault.width: '300px', type: #WITH_URL, url: 'SalesOrderURL' },
                               { type: #FOR_ACTION, dataAction: 'check_atp',           label: 'Check ATP',           position: 1 },
                               { type: #FOR_ACTION, dataAction: 'update_items',        label: 'Update Items',        position: 2 },
-                              { type: #FOR_ACTION, dataAction: 'create_sales_order',  label: 'Create Sales Order',  position: 3 },
-                              { type: #FOR_ACTION, dataAction: 'update_sales_order',  label: 'Update Sales Order',  position: 4 },
-                              { type: #FOR_ACTION, dataAction: 'get_sales_order',     label: 'Get Sales Order',     position: 5 } ],
+                              { type: #FOR_ACTION, dataAction: 'copy_color',          label: 'Copy Color',          position: 3 },
+                              { type: #FOR_ACTION, dataAction: 'create_sales_order',  label: 'Create Sales Order',  position: 4 },
+                              { type: #FOR_ACTION, dataAction: 'update_sales_order',  label: 'Update Sales Order',  position: 5 },
+                              { type: #FOR_ACTION, dataAction: 'get_sales_order',     label: 'Get Sales Order',     position: 6 } ],
             selectionField: [ { position: 30 } ] }
     SalesOrderID;
 
@@ -285,6 +294,13 @@ annotate entity ZC_MATRIX_005 with
             identification: [ { position: 130, label: 'Customer Reference', cssDefault.width: '300px' } ],
             selectionField: [ { position: 130 } ] }
     PurchaseOrderByCustomer;
+
+
+    @UI: {  /*lineItem:       [ { position: 135, label: 'Copy Color', cssDefault.width: '300px' } ],*/
+            identification: [ { position: 135, label: 'Copy Color', cssDefault.width: '300px' } ]/*,
+            selectionField: [ { position: 135 } ]*/ }
+    @UI.hidden: true
+    Copying;
 
     @UI: {  lineItem:       [ { position: 140, label: 'Models Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'ModelRefURL' } ],
             identification: [ { position: 140, label: 'Models Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'ModelRefURL' } ] }
@@ -437,8 +453,13 @@ annotate entity ZC_MATRIX_005 with
     @UI.hidden: true
     Hidden21; // abap_boolean
 //
-//    @UI: {  lineItem:       [ { position: 380, label: 'Criticality01', cssDefault.width: '100px' } ],
-//            identification: [ { position: 380, label: 'Criticality01', cssDefault.width: '100px' } ] }
+//    @UI: {  lineItem:       [ { position: 380, label: 'Hidden22', cssDefault.width: '100px' } ],
+//            identification: [ { position: 380, label: 'Hidden22', cssDefault.width: '100px' } ] }
+    @UI.hidden: true
+    Hidden22; // abap_boolean
+//
+//    @UI: {  lineItem:       [ { position: 390, label: 'Criticality01', cssDefault.width: '100px' } ],
+//            identification: [ { position: 390, label: 'Criticality01', cssDefault.width: '100px' } ] }
     @UI.hidden: true
     Criticality01;
 

@@ -4,9 +4,9 @@
   <asx:values>
    <SRVB>
     <METADATA>
-     <NAME>ZSO_COLOR_005</NAME>
+     <NAME>ZSB_MODEL_005_ODATA</NAME>
      <TYPE>SRVB/SVB</TYPE>
-     <DESCRIPTION>ZSO_COLOR_005</DESCRIPTION>
+     <DESCRIPTION>ZSB_MODEL_005_ODATA</DESCRIPTION>
      <LANGUAGE>EN</LANGUAGE>
      <LINKS>
       <item>
@@ -15,7 +15,7 @@
        <TITLE>Historic versions</TITLE>
       </item>
       <item>
-       <HREF>/sap/bc/adt/businessservices/odatav2/ZSO_COLOR_005</HREF>
+       <HREF>/sap/bc/adt/businessservices/odatav2/ZSB_MODEL_005_ODATA</HREF>
        <REL>http://www.sap.com/categories/odatav2</REL>
        <TYPE>application/vnd.sap.adt.businessservices.odatav2.v2+xml</TYPE>
        <TITLE>ODATAV2</TITLE>
@@ -44,22 +44,22 @@
     </METADATA>
     <CONTENT>
      <BIND_TYPE_IMPL>
-      <NAME>ZSO_COLOR_005</NAME>
+      <NAME>ZSB_MODEL_005_ODATA</NAME>
      </BIND_TYPE_IMPL>
      <BIND_TYPE>ODATA</BIND_TYPE>
      <BIND_TYPE_CATEGORY>1</BIND_TYPE_CATEGORY>
      <BIND_TYPE_VERSION>V2</BIND_TYPE_VERSION>
      <SERVICES>
       <item>
-       <SERVICE_NAME>ZSO_COLOR_005</SERVICE_NAME>
+       <SERVICE_NAME>ZSB_MODEL_005_ODATA</SERVICE_NAME>
        <SERVICE_CONTENT>
         <item>
          <SERVICE_VERSION>0001</SERVICE_VERSION>
-         <RELEASE_STATE>RELEASED</RELEASE_STATE>
+         <RELEASE_STATE>NOT_RELEASED</RELEASE_STATE>
          <SRVD_REF>
-          <URI>/sap/bc/adt/ddic/srvd/sources/zsd_color_005</URI>
+          <URI>/sap/bc/adt/ddic/srvd/sources/zsd_model_005</URI>
           <TYPE>SRVD/SRV</TYPE>
-          <NAME>ZSD_COLOR_005</NAME>
+          <NAME>ZSD_MODEL_005</NAME>
          </SRVD_REF>
          <BIND_TYPE_DATA>
           <CONTENT>
