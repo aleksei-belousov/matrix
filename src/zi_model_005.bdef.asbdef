@@ -30,6 +30,7 @@ etag master LocalLastChangedAt
     ModelUUID               = modeluuid;
     ModelID                 = modelid;
     Description             = description;
+    MatrixTypeID            = matrixtypeid;
     CreatedBy               = createdby;
     CreatedAt               = createdat;
     LastChangedAt           = lastchangedat;
