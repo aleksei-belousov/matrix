@@ -230,6 +230,7 @@ CLASS lhc_matrix IMPLEMENTATION.
                         distributionchannel     = |{ wa_matrix_005-DistributionChannel ALPHA = IN }|    " '10'
                         organizationdivision    = |{ wa_matrix_005-OrganizationDivision ALPHA = IN }|   " '00'
                         soldtoparty             = |{ wa_matrix_005-SoldToParty ALPHA = IN }|            " '0010100014'
+                        PurchaseOrderByCustomer = wa_matrix_005-PurchaseOrderByCustomer                 " 'Matrix Test 1'
                     )
                 )
             ).
@@ -268,6 +269,7 @@ CLASS lhc_matrix IMPLEMENTATION.
                     distributionchannel
                     organizationdivision
                     soldtoparty
+                    purchaseorderbycustomer
                 )
                 WITH it_salesorder
                 CREATE BY \_item

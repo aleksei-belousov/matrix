@@ -12,7 +12,8 @@ ENDCLASS.
 
 
 
-CLASS zcl_sd_sls_check_before_save IMPLEMENTATION.
+CLASS ZCL_SD_SLS_CHECK_BEFORE_SAVE IMPLEMENTATION.
+
 
   METHOD if_sd_sls_check_before_save~check_document.
 
@@ -40,5 +41,4 @@ CLASS zcl_sd_sls_check_before_save IMPLEMENTATION.
     ENDIF.
 
   ENDMETHOD.
-
 ENDCLASS.

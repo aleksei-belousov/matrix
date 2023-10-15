@@ -25,16 +25,4 @@ etag master LocalLastChangedAt
     //determination on_prepare;
   }
 
-  mapping for ZMODEL_005
-  {
-    ModelUUID               = modeluuid;
-    ModelID                 = modelid;
-    Description             = description;
-    MatrixTypeID            = matrixtypeid;
-    CreatedBy               = createdby;
-    CreatedAt               = createdat;
-    LastChangedAt           = lastchangedat;
-    LastChangedBy           = lastchangedby;
-    LocalLastChangedAt      = locallastchangedat;
-  }
 }

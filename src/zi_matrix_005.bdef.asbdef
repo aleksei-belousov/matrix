@@ -35,7 +35,7 @@ etag master LocalLastChangedAt
   field ( numbering : managed, readonly ) MatrixUUID;
   field ( readonly ) MatrixID;
   field ( readonly ) SalesOrderID;
-  field ( readonly ) MatrixTypeID;
+  field ( readonly ) MatrixTypeID; //// readonly but updatable on creation
   field ( readonly ) ModelRef;
   field ( readonly ) ColorRef;
   field ( readonly ) CountryRef;
@@ -51,7 +51,7 @@ etag master LocalLastChangedAt
 //    determination on_prepare;
 //  }
 
-  mapping for ZMATRIX_005
+  mapping for ZMATRIX_005 // not necessary if field names are corresponding
   {
     MatrixUUID              = matrixuuid;
     MatrixID                = matrixid;
@@ -180,9 +180,9 @@ etag master LocalLastChangedAt
   delete;
 
   field ( readonly ) MatrixUUID;
-  field ( readonly : update ) ItemID;
-  field ( readonly : update ) ItemID2;
-  field ( readonly : update ) Product;
+  field ( readonly : update ) ItemID;     // readonly but updatable on creation
+  field ( readonly : update ) ItemID2;    // - "" -
+  field ( readonly : update ) Product;    // - "" -
   field ( readonly : update ) Quantity;
   field ( readonly : update ) Stock;
   field ( readonly : update ) AvailableStock;
@@ -190,4 +190,23 @@ etag master LocalLastChangedAt
   field ( readonly : update ) LocalLastChangedAt;
 
   association _Matrix { with draft; }
+
+//  mapping for ZITEM_005 // not necessary if field names are corresponding
+//  {
+//      MatrixUUID            = matrixuuid;
+//      ItemID                = itemid;
+//      ItemID2               = itemid2;
+//      Model                 = model;
+//      Color                 = color;
+//      Cupsize               = cupsize;
+//      Backsize              = backsize;
+//      Product               = product;
+//      Quantity              = quantity;
+//      CreatedBy             = createdby;
+//      CreatedAt             = createdat;
+//      LastChangedBy         = lastchangedby;
+//      LastChangedAt         = lastchangedat;
+//      LocalLastChangedat    = locallastchangedat;
+//  }
+
 }
