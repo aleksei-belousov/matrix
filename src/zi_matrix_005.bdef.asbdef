@@ -21,6 +21,8 @@ etag master LocalLastChangedAt
   action create_sales_order;
   action get_sales_order;
   action update_sales_order;
+  //action test_odata;
+  action check_sizes;
 
   // Events:
   determination on_create on modify { field MatrixUUID; }
@@ -35,7 +37,7 @@ etag master LocalLastChangedAt
   field ( numbering : managed, readonly ) MatrixUUID;
   field ( readonly ) MatrixID;
   field ( readonly ) SalesOrderID;
-  field ( readonly ) MatrixTypeID; //// readonly but updatable on creation
+  field ( readonly ) MatrixTypeID;
   field ( readonly ) ModelRef;
   field ( readonly ) ColorRef;
   field ( readonly ) CountryRef;
@@ -51,64 +53,65 @@ etag master LocalLastChangedAt
 //    determination on_prepare;
 //  }
 
-  mapping for ZMATRIX_005 // not necessary if field names are corresponding
-  {
-    MatrixUUID              = matrixuuid;
-    MatrixID                = matrixid;
-    OrganizationDivision    = organizationdivision;
-    SalesOrderID            = salesorderid;
-    SalesOrderType          = salesordertype;
-    SalesOrganization       = salesorganization;
-    SoldToParty             = soldtoparty;
-    DistributionChannel     = distributionchannel;
-    Model                   = model;
-    Color                   = color;
-    MatrixTypeID            = matrixtypeid;
-    Country                 = country;
-    PurchaseOrderByCustomer = purchaseorderbycustomer;
-    Copying                 = copying; // Copy Color
-    SalesOrderURL           = salesorderurl;
-    CustomerURL             = customerurl;
-    ModelRef                = modelref;
-    ModelRefURL             = modelrefurl;
-    ColorRef                = colorref;
-    ColorRefURL             = colorrefurl;
-    CountryRef              = countryref;
-    CountryRefURL           = countryrefurl;
-    MatrixTypeRef           = matrixtyperef;
-    MatrixTypeRefURL        = matrixtyperefurl;
-    Hidden00                = hidden00;
-    Hidden01                = hidden01;
-    Hidden02                = hidden02;
-    Hidden03                = hidden03;
-    Hidden04                = hidden04;
-    Hidden05                = hidden05;
-    Hidden06                = hidden06;
-    Hidden07                = hidden07;
-    Hidden08                = hidden08;
-    Hidden09                = hidden09;
-    Hidden10                = hidden10;
-    Hidden11                = hidden11;
-    Hidden12                = hidden12;
-    Hidden13                = hidden13;
-    Hidden14                = hidden14;
-    Hidden15                = hidden15;
-    Hidden16                = hidden16;
-    Hidden17                = hidden17;
-    Hidden18                = hidden18;
-    Hidden19                = hidden19;
-    Hidden20                = hidden20;
-    Hidden21                = hidden21;
-    Hidden22                = hidden22;
-    Criticality01           = criticality01;
-    CreationDate            = creationdate;
-    CreationTime            = creationtime;
-    CreatedBy               = createdby;
-    CreatedAt               = createdat;
-    LastChangedAt           = lastchangedat;
-    LastChangedBy           = lastchangedby;
-    LocalLastChangedAt      = locallastchangedat;
-  }
+//  mapping for ZMATRIX_005 // not necessary if field names are corresponding
+//  {
+//    MatrixUUID              = matrixuuid;
+//    MatrixID                = matrixid;
+//    OrganizationDivision    = organizationdivision;
+//    SalesOrderID            = salesorderid;
+//    SalesOrderType          = salesordertype;
+//    SalesOrganization       = salesorganization;
+//    SoldToParty             = soldtoparty;
+//    DistributionChannel     = distributionchannel;
+//    Model                   = model;
+//    Color                   = color;
+//    MatrixTypeID            = matrixtypeid;
+//    Country                 = country;
+//    PurchaseOrderByCustomer = purchaseorderbycustomer;
+//    RequestedDeliveryDate   = requesteddeliverydate;
+//    Copying                 = copying; // Copy Color
+//    SalesOrderURL           = salesorderurl;
+//    CustomerURL             = customerurl;
+//    ModelRef                = modelref;
+//    ModelRefURL             = modelrefurl;
+//    ColorRef                = colorref;
+//    ColorRefURL             = colorrefurl;
+//    CountryRef              = countryref;
+//    CountryRefURL           = countryrefurl;
+//    MatrixTypeRef           = matrixtyperef;
+//    MatrixTypeRefURL        = matrixtyperefurl;
+//    Hidden00                = hidden00;
+//    Hidden01                = hidden01;
+//    Hidden02                = hidden02;
+//    Hidden03                = hidden03;
+//    Hidden04                = hidden04;
+//    Hidden05                = hidden05;
+//    Hidden06                = hidden06;
+//    Hidden07                = hidden07;
+//    Hidden08                = hidden08;
+//    Hidden09                = hidden09;
+//    Hidden10                = hidden10;
+//    Hidden11                = hidden11;
+//    Hidden12                = hidden12;
+//    Hidden13                = hidden13;
+//    Hidden14                = hidden14;
+//    Hidden15                = hidden15;
+//    Hidden16                = hidden16;
+//    Hidden17                = hidden17;
+//    Hidden18                = hidden18;
+//    Hidden19                = hidden19;
+//    Hidden20                = hidden20;
+//    Hidden21                = hidden21;
+//    Hidden22                = hidden22;
+//    Criticality01           = criticality01;
+//    CreationDate            = creationdate;
+//    CreationTime            = creationtime;
+//    CreatedBy               = createdby;
+//    CreatedAt               = createdat;
+//    LastChangedAt           = lastchangedat;
+//    LastChangedBy           = lastchangedby;
+//    LocalLastChangedAt      = locallastchangedat;
+//  }
   side effects
   {
     field Model affects field MatrixTypeID, entity _Size;
@@ -190,23 +193,5 @@ etag master LocalLastChangedAt
   field ( readonly : update ) LocalLastChangedAt;
 
   association _Matrix { with draft; }
-
-//  mapping for ZITEM_005 // not necessary if field names are corresponding
-//  {
-//      MatrixUUID            = matrixuuid;
-//      ItemID                = itemid;
-//      ItemID2               = itemid2;
-//      Model                 = model;
-//      Color                 = color;
-//      Cupsize               = cupsize;
-//      Backsize              = backsize;
-//      Product               = product;
-//      Quantity              = quantity;
-//      CreatedBy             = createdby;
-//      CreatedAt             = createdat;
-//      LastChangedBy         = lastchangedby;
-//      LastChangedAt         = lastchangedat;
-//      LocalLastChangedat    = locallastchangedat;
-//  }
 
 }

@@ -18,6 +18,7 @@ association [0..1] to I_Customer  as _Customer on $projection.SoldToParty = _Cus
     matrixtypeid as MatrixTypeID,
     country as Country,
     purchaseorderbycustomer as PurchaseOrderByCustomer,
+    requesteddeliverydate as RequestedDeliveryDate,
     copying as Copying,
     creationdate as CreationDate,
     creationtime as CreationTime,

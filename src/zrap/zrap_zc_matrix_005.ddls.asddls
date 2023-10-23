@@ -42,6 +42,9 @@
  @OData.property.valueControl: 'PurchaseOrderByCustomer_vc' 
  PurchaseOrderByCustomer : abap.char( 35 ) ; 
  PurchaseOrderByCustomer_vc : rap_cp_odata_value_control ; 
+ @OData.property.valueControl: 'RequestedDeliveryDate_vc' 
+ RequestedDeliveryDate : abap.dats; 
+ RequestedDeliveryDate_vc : rap_cp_odata_value_control ; 
  @OData.property.valueControl: 'Copying_vc' 
  Copying : abap_boolean ; 
  Copying_vc : rap_cp_odata_value_control ; 

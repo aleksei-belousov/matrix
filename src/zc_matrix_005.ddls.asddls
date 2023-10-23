@@ -30,6 +30,7 @@ define root view entity ZC_MATRIX_005 provider contract transactional_query as p
     @Consumption.valueHelpDefinition: [ { entity: { name: 'ZC_COUNTRY_005', element: 'CountryID' } } ]
     Country,
     PurchaseOrderByCustomer,
+    RequestedDeliveryDate,
     Copying,
     CreationDate,
     CreationTime,

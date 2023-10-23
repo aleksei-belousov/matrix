@@ -48,35 +48,50 @@ CLASS lhc_matrix DEFINITION INHERITING FROM cl_abap_behavior_handler.
     METHODS copy_color FOR MODIFY
       IMPORTING keys FOR ACTION matrix~copy_color.
 
+    METHODS check_sizes FOR MODIFY
+      IMPORTING keys FOR ACTION matrix~check_sizes.
+
 *   Internal methods:
 
 *   Get Availability for ATP check
     METHODS get_stock_availability
       IMPORTING
-        value(i_plant)              TYPE string
-        value(i_product)            TYPE string
-        value(i_quantity)           TYPE string
+        VALUE(i_plant)              TYPE string
+        VALUE(i_product)            TYPE string
+        VALUE(i_quantity)           TYPE string
       EXPORTING
-        value(o_available_stock)    TYPE string
-        value(o_stock)              TYPE string
-        value(o_availability)       TYPE string
-        value(o_criticality)        TYPE string.
+        VALUE(o_available_stock)    TYPE string
+        VALUE(o_stock)              TYPE string
+        VALUE(o_availability)       TYPE string
+        VALUE(o_criticality)        TYPE string.
 
 *   Convert Sizes to Items
     METHODS sizes_to_items
       IMPORTING
-        value(is_draft)             TYPE abp_behv_flag
-        value(i_matrixuuid)         TYPE zi_matrix_005-MatrixUUID
-        value(i_model)              TYPE zi_matrix_005-Model
-        value(i_color)              TYPE zi_matrix_005-Color.
+        VALUE(is_draft)             TYPE abp_behv_flag
+        VALUE(i_matrixuuid)         TYPE zi_matrix_005-MatrixUUID
+        VALUE(i_model)              TYPE zi_matrix_005-Model
+        VALUE(i_color)              TYPE zi_matrix_005-Color.
 
 *   Get Sales Order and Update Matrix Items
     METHODS get_sales_order_internal
       IMPORTING
-        value(i_matrixuuid)         TYPE zi_matrix_005-MatrixUUID
-        value(i_model)              TYPE zi_matrix_005-Model
-        value(i_color)              TYPE zi_matrix_005-Color
-        value(i_salesorderid)       TYPE zi_matrix_005-SalesOrderID.
+        VALUE(i_matrixuuid)         TYPE zi_matrix_005-MatrixUUID
+        VALUE(i_model)              TYPE zi_matrix_005-Model
+        VALUE(i_color)              TYPE zi_matrix_005-Color
+        VALUE(i_salesorderid)       TYPE zi_matrix_005-SalesOrderID.
+
+*   Check the Material (exists or does not)
+    METHODS check_product_internal
+      IMPORTING
+        VALUE(i_product)            TYPE string
+      RETURNING
+        VALUE(exists)               TYPE abap_boolean.
+
+*   Check Materials (exists or doesn't) and Update Status on Sizes
+    METHODS check_sizes_internal
+      IMPORTING
+        VALUE(i_matrixuuid)        TYPE zi_matrix_005-MatrixUUID.
 
 ENDCLASS. " lhc_matrix DEFINITION
 
@@ -96,64 +111,7 @@ CLASS lhc_matrix IMPLEMENTATION.
         LOOP AT entities ASSIGNING FIELD-SYMBOL(<entity>).
 
             IF ( <entity>-%is_draft = '00' ). " Saved
-*                APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-success text = 'get_instance_authorizations: Open Saved.' ) ) TO reported-matrix.
-
-*                IF ( <entity>-SalesOrderID IS NOT INITIAL ).
-*
-**                   Read Sales Order Items
-*                    READ ENTITIES OF i_salesordertp
-*                        ENTITY SalesOrder
-*                        BY \_Item
-*                        ALL FIELDS WITH VALUE #( ( salesorder = <entity>-SalesOrderID ) )
-*                        RESULT DATA(lt_salesorder_item)
-*                        FAILED DATA(ls_failed_read1)
-*                        REPORTED DATA(ls_reported_read1).
-*
-*                    SORT lt_salesorder_item STABLE BY Product.
-*
-**                   Read Sales Order Items
-*                    READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
-*                        ENTITY Matrix
-*                        BY \_Item
-*                        ALL FIELDS WITH VALUE #( ( matrixuuid = <entity>-MatrixUUID ) )
-*                        RESULT DATA(lt_matrix_item)
-*                        FAILED DATA(ls_failed_read2)
-*                        REPORTED DATA(ls_reported_read2).
-*
-*                    SORT lt_matrix_item STABLE BY Product.
-*
-*                    DATA(equal) = abap_true.
-*                    IF ( LINES( lt_salesorder_item[] ) <> LINES( lt_matrix_item[] ) ).
-*                        equal = abap_false.
-*                    ELSE.
-*                        LOOP AT lt_salesorder_item INTO DATA(ls_salesorder_item).
-*                            READ TABLE lt_matrix_item INTO DATA(ls_matrix_item) WITH KEY Product = ls_salesorder_item-Product.
-*                            IF ( sy-subrc <> 0 ).
-*                                equal = abap_false.
-*                                EXIT.
-*                            ELSE.
-*                                IF ( ls_salesorder_item-RequestedQuantity <> ls_matrix_item-Quantity ).
-*                                    equal = abap_false.
-*                                    EXIT.
-*                                ENDIF.
-*                            ENDIF.
-*                        ENDLOOP.
-*                    ENDIF.
-*
-*                    IF ( equal = abap_true ).
-*                        DATA(a) = 1.
-*                    ELSE.
-**                       Restore Items from the Sales Order (raise an error) :
-*                        get_sales_order_internal(
-*                            i_matrixuuid   = <entity>-MatrixUUID
-*                            i_model        = <entity>-Model
-*                            i_color        = <entity>-Color
-*                            i_salesorderid = <entity>-SalesOrderID
-*                        ).
-*                    ENDIF.
-
-*                ENDIF.
-
+*                APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-success text = 'get_instance_authorizations: Saved.' ) ) TO reported-matrix.
             ENDIF.
 
             IF ( <entity>-%is_draft = '01' ). " Draft
@@ -231,6 +189,7 @@ CLASS lhc_matrix IMPLEMENTATION.
                         organizationdivision    = |{ wa_matrix_005-OrganizationDivision ALPHA = IN }|   " '00'
                         soldtoparty             = |{ wa_matrix_005-SoldToParty ALPHA = IN }|            " '0010100014'
                         PurchaseOrderByCustomer = wa_matrix_005-PurchaseOrderByCustomer                 " 'Matrix Test 1'
+                        RequestedDeliveryDate   = wa_matrix_005-RequestedDeliveryDate
                     )
                 )
             ).
@@ -264,12 +223,13 @@ CLASS lhc_matrix IMPLEMENTATION.
             MODIFY ENTITIES OF i_salesordertp
                 ENTITY salesorder
                 CREATE FIELDS (
-                    salesordertype
-                    salesorganization
-                    distributionchannel
-                    organizationdivision
-                    soldtoparty
-                    purchaseorderbycustomer
+                    SalesOrderType
+                    SalesOrganization
+                    DistributionChannel
+                    OrganizationDivision
+                    SoldToParty
+                    PurchaseOrderByCustomer
+                    RequestedDeliveryDate
                 )
                 WITH it_salesorder
                 CREATE BY \_item
@@ -355,6 +315,7 @@ CLASS lhc_matrix IMPLEMENTATION.
 *                    OrganizationDivision
                     SoldToParty
                     PurchaseOrderByCustomer
+                    RequestedDeliveryDate
                 )
                 WITH VALUE #( (
                     %key-SalesOrder         = wa_matrix_005-SalesOrderID                    " '0000000140'
@@ -363,6 +324,7 @@ CLASS lhc_matrix IMPLEMENTATION.
 *                    OrganizationDivision    = wa_matrix_005-OrganizationDivision            " '00'
                     SoldToParty             = |{ wa_matrix_005-SoldToParty ALPHA = IN }|    " '0010100014'
                     PurchaseOrderByCustomer = wa_matrix_005-PurchaseOrderByCustomer         " '12350'
+                    RequestedDeliveryDate   = wa_matrix_005-RequestedDeliveryDate
                 ) )
                 MAPPED DATA(ls_order_mapped)
                 FAILED DATA(ls_order_failed)
@@ -466,21 +428,6 @@ CLASS lhc_matrix IMPLEMENTATION.
 
   METHOD get_sales_order.
 
-*    DATA it_matrix_update   TYPE TABLE FOR UPDATE zi_matrix_005\\Matrix.    " Matrix
-*    DATA it_item_create     TYPE TABLE FOR CREATE zi_matrix_005\_Item.      " Item
-*    DATA it_size_update     TYPE TABLE FOR UPDATE zi_matrix_005\\Size .     " Size
-*    DATA wa_size_update     LIKE LINE OF it_size_update.
-
-*    DATA product      TYPE string VALUE ''.
-*    DATA quantity     TYPE string VALUE ''.
-*    DATA model        TYPE string VALUE ''.
-*    DATA color        TYPE string VALUE ''.
-*    DATA backsize     TYPE string VALUE ''.
-*    DATA cupsize      TYPE string VALUE ''.
-*    DATA productURL   TYPE string VALUE ''.
-*
-*    DATA tabix TYPE sy-tabix.
-
    " Read transfered instances
     READ ENTITIES OF zi_matrix_005  IN LOCAL MODE
         ENTITY Matrix
@@ -506,172 +453,6 @@ CLASS lhc_matrix IMPLEMENTATION.
                     i_salesorderid = <entity>-SalesOrderID
                 ).
 
-**               Read Actual Matrix Items
-*                READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
-*                    ENTITY Matrix
-*                    BY \_Item
-*                    ALL FIELDS WITH VALUE #( ( MatrixUUID = <entity>-MatrixUUID ) )
-*                    RESULT DATA(lt_matrix_item)
-*                    FAILED DATA(ls_read_failed)
-*                    REPORTED DATA(ls_read_reported).
-*
-*                SORT lt_matrix_item STABLE BY ItemID.
-*
-**               Delete Actual Matrix Items
-*                LOOP AT lt_matrix_item INTO DATA(ls_matrix_item).
-*                    MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
-*                        ENTITY Item
-*                        DELETE FROM VALUE #( ( MatrixUUID = <entity>-MatrixUUID ItemID = ls_matrix_item-ItemID ) )
-*                        FAILED DATA(ls_delete_failed)
-*                        MAPPED DATA(ls_delete_mapped)
-*                        REPORTED DATA(ls_delete_reported).
-*                ENDLOOP.
-*
-**               Read Sales Order Items
-*                READ ENTITIES OF i_salesordertp
-*                    ENTITY SalesOrder
-*                    BY \_Item
-*                    ALL FIELDS WITH VALUE #( ( salesorder = <entity>-SalesOrderID ) )
-*                    RESULT DATA(lt_salesorder_item)
-*                    FAILED DATA(ls_failed_read)
-*                    REPORTED DATA(ls_reported_read).
-*
-*                SORT lt_salesorder_item STABLE BY SalesOrderItem.
-*
-**               Create New Matrix Items
-*                LOOP AT lt_salesorder_item INTO DATA(ls_salesorder_item).
-*
-*                    product   = ls_salesorder_item-product.
-*                    SPLIT product AT '-' INTO model color cupsize backsize.
-*                    quantity = round( val  = ls_salesorder_item-RequestedQuantity dec  = 0 ).
-*                    CONDENSE quantity NO-GAPS.
-*                    productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
-*
-*                    APPEND VALUE #(
-*                        MatrixUUID = <entity>-MatrixUUID
-*                        %target = VALUE #( (
-*                            %cid       = sy-tabix
-*                            ItemID     = sy-tabix
-*                            ItemID2    = sy-tabix
-*                            Model      = model
-*                            Color      = color
-*                            Cupsize    = cupsize
-*                            Backsize   = backsize
-*                            Product    = product
-*                            Quantity   = quantity
-*                            ProductURL = productURL
-*                        ) )
-*                    ) TO it_item_create.
-*
-*                ENDLOOP.
-*
-*                MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
-*                    ENTITY Matrix
-*                    CREATE BY \_Item
-*                    FIELDS ( ItemID ItemID2 Model Color Cupsize Backsize Product Quantity ProductURL )
-*                    WITH it_item_create
-*                    FAILED DATA(ls_item_failed)
-*                    MAPPED DATA(ls_item_mapped)
-*                    REPORTED DATA(ls_item_reported).
-*
-**               Update Size table from Item table:
-*
-**               Read Size Head table
-*                READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
-*                    ENTITY Matrix
-*                    BY \_Sizehead
-*                    ALL FIELDS WITH VALUE #( ( MatrixUUID = <entity>-MatrixUUID ) )
-*                    RESULT DATA(lt_sizehead)
-*                    FAILED DATA(ls_failed_sizehead_read)
-*                    REPORTED DATA(ls_reported_sizehead_read).
-*
-*                READ TABLE lt_sizehead INTO DATA(ls_sizehead1) WITH KEY SizeID = 1.
-*                READ TABLE lt_sizehead INTO DATA(ls_sizehead2) WITH KEY SizeID = 2.
-*
-***               OhneGr (Default)
-**                IF ( lt_sizehead IS INITIAL ).
-**                    ls_sizehead1-a = '001'.
-**                    ls_sizehead2-a = '001'.
-**                ENDIF.
-*
-*                READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
-*                    ENTITY Matrix
-*                    BY \_Size
-*                    ALL FIELDS WITH VALUE #( ( MatrixUUID = <entity>-MatrixUUID ) )
-*                    RESULT DATA(lt_size)
-*                    FAILED DATA(ls_failed_size_read)
-*                    REPORTED DATA(ls_reported_size_read).
-*
-**               Copy Size table to Size Update table
-*                LOOP AT lt_size INTO DATA(wa_size).
-*                    MOVE-CORRESPONDING wa_size TO wa_size_update.
-*                    CLEAR wa_size_update-a.
-*                    CLEAR wa_size_update-b.
-*                    CLEAR wa_size_update-c.
-*                    CLEAR wa_size_update-d.
-*                    CLEAR wa_size_update-e.
-*                    CLEAR wa_size_update-f.
-*                    CLEAR wa_size_update-g.
-*                    CLEAR wa_size_update-h.
-*                    CLEAR wa_size_update-i.
-*                    CLEAR wa_size_update-j.
-*                    CLEAR wa_size_update-k.
-*                    CLEAR wa_size_update-l.
-*                    APPEND wa_size_update TO it_size_update.
-*                ENDLOOP.
-*
-**               Fill Quantities
-*                LOOP AT it_item_create INTO DATA(wa_item_create).
-*                    LOOP AT wa_item_create-%target INTO DATA(target).
-*                        product = target-Product.
-*                        SPLIT product AT '-' INTO model color cupsize backsize.
-*                        IF ( ( model = <entity>-Model ) AND ( color = <entity>-Color ) ).
-*                            quantity = target-Quantity.
-*                            LOOP AT it_size_update INTO wa_size_update.
-*                                tabix = sy-tabix.
-*                                IF ( cupsize = wa_size_update-Back ).
-*                                    CASE backsize.
-*                                        WHEN ls_sizehead2-a.
-*                                            wa_size_update-a = quantity.
-*                                        WHEN ls_sizehead2-b.
-*                                            wa_size_update-b = quantity.
-*                                        WHEN ls_sizehead2-c.
-*                                            wa_size_update-c = quantity.
-*                                        WHEN ls_sizehead2-d.
-*                                            wa_size_update-d = quantity.
-*                                        WHEN ls_sizehead2-e.
-*                                            wa_size_update-e = quantity.
-*                                        WHEN ls_sizehead2-f.
-*                                            wa_size_update-f = quantity.
-*                                        WHEN ls_sizehead2-g.
-*                                            wa_size_update-g = quantity.
-*                                        WHEN ls_sizehead2-h.
-*                                            wa_size_update-h = quantity.
-*                                        WHEN ls_sizehead2-i.
-*                                            wa_size_update-i = quantity.
-*                                        WHEN ls_sizehead2-j.
-*                                            wa_size_update-j = quantity.
-*                                        WHEN ls_sizehead2-k.
-*                                            wa_size_update-k = quantity.
-*                                        WHEN ls_sizehead2-l.
-*                                            wa_size_update-l = quantity.
-*                                    ENDCASE.
-*                                ENDIF.
-*                                MODIFY it_size_update FROM wa_size_update INDEX tabix.
-*                            ENDLOOP.
-*                        ENDIF.
-*                    ENDLOOP.
-*                ENDLOOP.
-*
-**               Update Actual Size Table
-*                MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
-*                    ENTITY Size
-*                    UPDATE FIELDS ( a b c d e f g h i j k l )
-*                    WITH it_size_update
-*                    MAPPED DATA(ls_size_update_mapped)
-*                    FAILED DATA(ls_size_update_failed)
-*                    REPORTED DATA(ls_size_update_reported).
-
             ENDIF.
 
         ENDIF.
@@ -685,10 +466,6 @@ CLASS lhc_matrix IMPLEMENTATION.
   ENDMETHOD. " get_sales_order
 
   METHOD on_create. " on initial create
-
-*    DATA it_matrix_update   TYPE TABLE FOR UPDATE zi_matrix_005\\Matrix.    " Matrix
-*    DATA it_sizehead_create TYPE TABLE FOR CREATE zi_matrix_005\_Sizehead.  " Size Head
-*    DATA it_size_create     TYPE TABLE FOR CREATE zi_matrix_005\_Size.      " Size
 
    " Read transfered instances
     READ ENTITIES OF zi_matrix_005  IN LOCAL MODE
@@ -785,8 +562,7 @@ CLASS lhc_matrix IMPLEMENTATION.
 
 *           Set Matrix Type URL
             DATA(matrixTypeRef)     = |Link|.
-            DATA(matrixTypeRefURL)  = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvsu%7DysDDICxCuCxsu%7DysDDICDDDEC77nWsaUhf%5DlhmdYsDDI77sVuwg%7DyTTsWg%7Dy77nWsVUW_g%5DnYsDDITTnWsWidg%5DnYsDDI77|
-&&
+            DATA(matrixTypeRefURL)  = |/sap/bc/adt/businessservices/odatav4/feap?feapParams=CuCCxuuHCuCvsu%7DysDDICxCuCxsu%7DysDDICDDDEC77nWsaUhf%5DlhmdYsDDI77sVuwg%7DyTTsWg%7Dy77nWsVUW_g%5DnYsDDITTnWsWidg%5DnYsDDI77| &&
                                       |ngXsaUhf%5DlhmdYsDDI77DDDE77ngVsaUhf%5DlhmdYsDDI&sap-ui-language=EN&sap-client=080|.
 
             MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
@@ -814,9 +590,23 @@ CLASS lhc_matrix IMPLEMENTATION.
   ENDMETHOD. " on_create
 
   METHOD Edit. " Edit
-    LOOP AT keys INTO DATA(key).
-        APPEND VALUE #( %key = key-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-success text = 'Edit.'  ) ) TO reported-matrix.
+
+   "read transfered instances
+    READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+      ENTITY Matrix
+      ALL FIELDS
+      WITH CORRESPONDING #( keys )
+      RESULT DATA(entities).
+
+    LOOP AT entities ASSIGNING FIELD-SYMBOL(<entity>).
+
+        APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-success text = 'Edit.'  ) ) TO reported-matrix.
+
+*       For using in SAVE_MODIFY to Update Sizes Tables
+        zbp_i_matrix_005=>mapped_matrix_uuid = <entity>-MatrixUUID.
+
     ENDLOOP.
+
   ENDMETHOD. " Edit
 
   METHOD Activate. " pressing Save button
@@ -952,6 +742,9 @@ CLASS lhc_matrix IMPLEMENTATION.
                                         i_matrixuuid    = <entity>-MatrixUUID
                                         i_model         = <entity>-Model
                                         i_color         = <entity>-Color ).
+
+*           Check if product exists and update Size table
+            check_sizes_internal( <entity>-MatrixUUID ).
 
             " After All - Refresh Items (Side Effect on _Item)
 
@@ -1449,8 +1242,10 @@ CLASS lhc_matrix IMPLEMENTATION.
               MAPPED DATA(it_size_create_mapped)
               REPORTED DATA(it_size_create_reported).
 
-*           Populate Size table according to Matrix Type
+*           Check and update product quantity in size table
+            check_sizes_internal( <entity>-MatrixUUID ).
 
+*           Populate Size table according to Matrix Type
 
         ENDIF.
 
@@ -1704,7 +1499,7 @@ CLASS lhc_matrix IMPLEMENTATION.
     DATA available_stock    TYPE P DECIMALS 0.
 
 *   Check Product
-    SELECT SINGLE * FROM I_Product WHERE ( Product = @i_product ) INTO @DATA(wa_product).
+    SELECT SINGLE * FROM I_Product WHERE ( ( Product = @i_product ) AND ( IsMarkedForDeletion = @abap_false ) ) INTO @DATA(wa_product).
     IF ( sy-subrc <> 0 ).
         o_stock             = ''.
         o_available_stock   = ''.
@@ -1824,11 +1619,6 @@ CLASS lhc_matrix IMPLEMENTATION.
 
 * Convert Sizes to Items
   METHOD sizes_to_items.
-*      IMPORTING
-*        value(is_draft)             TYPE abp_behv_flag
-*        value(i_matrixuuid)         TYPE zi_matrix_005-MatrixUUID
-*        value(i_model)              TYPE zi_matrix_005-Model
-*        value(i_color)              TYPE zi_matrix_005-Color.
 
     DATA it_item_create TYPE TABLE FOR CREATE zi_matrix_005\_Item. " Item
     DATA wa_item_create LIKE LINE OF it_item_create.
@@ -1926,466 +1716,517 @@ CLASS lhc_matrix IMPLEMENTATION.
     READ TABLE lt_sizehead INTO DATA(ls_sizehead1) WITH KEY SizeID = 1.
     READ TABLE lt_sizehead INTO DATA(ls_sizehead2) WITH KEY SizeID = 2.
 
-*   Add New Items based on Actual Size table
-    LOOP AT lt_size INTO DATA(wa_size).
-        IF ( ( wa_size-a IS NOT INITIAL ) AND ( ls_sizehead2-a IS NOT INITIAL ) ).
-            maxid = maxid + 1.
-            cid = maxid.
-            backsize    = ls_sizehead2-a.
-            cupsize     = wa_size-backsizeid.
-            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-            quantity    = wa_size-a.
-            get_stock_availability( EXPORTING i_plant           = plant
-                                              i_product         = product
-                                              i_quantity        = quantity
-                                    IMPORTING o_stock           = stock
-                                              o_available_stock = available_stock
-                                              o_availability    = availability
-                                              o_criticality     = criticality ).
-            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
-            wa_item_create = VALUE #(
-                %is_draft  = is_draft
-                MatrixUUID = i_matrixuuid
-                %target = VALUE #( (
-                    %is_draft       = is_draft
-                    %cid            = cid
-                    ItemID          = cid
-                    MatrixUUID      = i_matrixuuid
-                    Cupsize         = cupsize
-                    Backsize        = backsize
-                    Quantity        = quantity
-                    Model           = model
-                    Color           = color
-                    Product         = product
-                    Stock           = stock
-                    AvailableStock  = available_stock
-                    Availability    = availability
-                    Criticality01   = criticality
-                    ProductURL      = productURL
-                ) )
-            ).
-            APPEND wa_item_create TO it_item_create.
-        ENDIF.
-        IF ( ( wa_size-b IS NOT INITIAL ) AND ( ls_sizehead2-b IS NOT INITIAL ) ).
-            maxid = maxid + 1.
-            cid = maxid.
-            backsize    = ls_sizehead2-b.
-            cupsize     = wa_size-backsizeid.
-            quantity    = wa_size-b.
-            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-            get_stock_availability( EXPORTING i_plant           = plant
-                                              i_product         = product
-                                              i_quantity        = quantity
-                                    IMPORTING o_stock           = stock
-                                              o_available_stock = available_stock
-                                              o_availability    = availability
-                                              o_criticality     = criticality ).
-            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
-            wa_item_create = VALUE #(
-                %is_draft  = is_draft
-                MatrixUUID = i_matrixuuid
-                %target = VALUE #( (
-                    %is_draft       = is_draft
-                    %cid            = cid
-                    ItemID          = cid
-                    MatrixUUID      = i_matrixuuid
-                    Cupsize         = cupsize
-                    Backsize        = backsize
-                    Quantity        = quantity
-                    Model           = model
-                    Color           = color
-                    Product         = product
-                    Stock           = stock
-                    AvailableStock  = available_stock
-                    Availability    = availability
-                    Criticality01   = criticality
-                    ProductURL      = productURL
-                ) )
-            ).
-            APPEND wa_item_create TO it_item_create.
-        ENDIF.
-        IF ( ( wa_size-c IS NOT INITIAL ) AND ( ls_sizehead2-c IS NOT INITIAL ) ).
-            maxid = maxid + 1.
-            cid = maxid.
-            backsize    = ls_sizehead2-c.
-            cupsize     = wa_size-backsizeid.
-            quantity    = wa_size-c.
-            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-            get_stock_availability( EXPORTING i_plant           = plant
-                                              i_product         = product
-                                              i_quantity        = quantity
-                                    IMPORTING o_stock           = stock
-                                              o_available_stock = available_stock
-                                              o_availability    = availability
-                                              o_criticality     = criticality ).
-            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
-            wa_item_create = VALUE #(
-                %is_draft  = is_draft
-                MatrixUUID = i_matrixuuid
-                %target = VALUE #( (
-                    %is_draft       = is_draft
-                    %cid            = cid
-                    ItemID          = cid
-                    MatrixUUID      = i_matrixuuid
-                    Cupsize         = cupsize
-                    Backsize        = backsize
-                    Quantity        = quantity
-                    Model           = model
-                    Color           = color
-                    Product         = product
-                    Stock           = stock
-                    AvailableStock  = available_stock
-                    Availability    = availability
-                    Criticality01   = criticality
-                    ProductURL      = productURL
-                ) )
-            ).
-            APPEND wa_item_create TO it_item_create.
-        ENDIF.
-        IF ( ( wa_size-d IS NOT INITIAL ) AND ( ls_sizehead2-d IS NOT INITIAL ) ).
-            maxid = maxid + 1.
-            cid = maxid.
-            backsize    = ls_sizehead2-d.
-            cupsize     = wa_size-backsizeid.
-            quantity    = wa_size-d.
-            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-            get_stock_availability( EXPORTING i_plant           = plant
-                                              i_product         = product
-                                              i_quantity        = quantity
-                                    IMPORTING o_stock           = stock
-                                              o_available_stock = available_stock
-                                              o_availability    = availability
-                                              o_criticality     = criticality ).
-            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
-            wa_item_create = VALUE #(
-                %is_draft  = is_draft
-                MatrixUUID = i_matrixuuid
-                %target = VALUE #( (
-                    %is_draft       = is_draft
-                    %cid            = cid
-                    ItemID          = cid
-                    MatrixUUID      = i_matrixuuid
-                    Cupsize         = cupsize
-                    Backsize        = backsize
-                    Quantity        = quantity
-                    Model           = model
-                    Color           = color
-                    Product         = product
-                    Stock           = stock
-                    AvailableStock  = available_stock
-                    Availability    = availability
-                    Criticality01   = criticality
-                    ProductURL      = productURL
-                ) )
-            ).
-            APPEND wa_item_create TO it_item_create.
-        ENDIF.
-        IF ( ( wa_size-e IS NOT INITIAL ) AND ( ls_sizehead2-e IS NOT INITIAL ) ).
-            maxid = maxid + 1.
-            cid = maxid.
-            backsize    = ls_sizehead2-e.
-            cupsize     = wa_size-backsizeid.
-            quantity    = wa_size-e.
-            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-            get_stock_availability( EXPORTING i_plant           = plant
-                                              i_product         = product
-                                              i_quantity        = quantity
-                                    IMPORTING o_stock           = stock
-                                              o_available_stock = available_stock
-                                              o_availability    = availability
-                                              o_criticality     = criticality ).
-            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
-            wa_item_create = VALUE #(
-                %is_draft  = is_draft
-                MatrixUUID = i_matrixuuid
-                %target = VALUE #( (
-                    %is_draft       = is_draft
-                    %cid            = cid
-                    ItemID          = cid
-                    MatrixUUID      = i_matrixuuid
-                    Cupsize         = cupsize
-                    Backsize        = backsize
-                    Quantity        = quantity
-                    Model           = model
-                    Color           = color
-                    Product         = product
-                    Stock           = stock
-                    AvailableStock  = available_stock
-                    Availability    = availability
-                    Criticality01   = criticality
-                    ProductURL      = productURL
-                ) )
-            ).
-            APPEND wa_item_create TO it_item_create.
-        ENDIF.
-        IF ( ( wa_size-f IS NOT INITIAL ) AND ( ls_sizehead2-f IS NOT INITIAL ) ).
-            maxid = maxid + 1.
-            cid = maxid.
-            backsize    = ls_sizehead2-f.
-            cupsize     = wa_size-backsizeid.
-            quantity    = wa_size-f.
-            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-            get_stock_availability( EXPORTING i_plant           = plant
-                                              i_product         = product
-                                              i_quantity        = quantity
-                                    IMPORTING o_stock           = stock
-                                              o_available_stock = available_stock
-                                              o_availability    = availability
-                                              o_criticality     = criticality ).
-            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
-            wa_item_create = VALUE #(
-                %is_draft  = is_draft
-                MatrixUUID = i_matrixuuid
-                %target = VALUE #( (
-                    %is_draft       = is_draft
-                    %cid            = cid
-                    ItemID          = cid
-                    MatrixUUID      = i_matrixuuid
-                    Cupsize         = cupsize
-                    Backsize        = backsize
-                    Quantity        = quantity
-                    Model           = model
-                    Color           = color
-                    Product         = product
-                    Stock           = stock
-                    AvailableStock  = available_stock
-                    Availability    = availability
-                    Criticality01   = criticality
-                    ProductURL      = productURL
-                ) )
-            ).
-            APPEND wa_item_create TO it_item_create.
-        ENDIF.
-        IF ( ( wa_size-g IS NOT INITIAL ) AND ( ls_sizehead2-g IS NOT INITIAL ) ).
-            maxid = maxid + 1.
-            cid = maxid.
-            backsize    = ls_sizehead2-g.
-            cupsize     = wa_size-backsizeid.
-            quantity    = wa_size-g.
-            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-            get_stock_availability( EXPORTING i_plant           = plant
-                                              i_product         = product
-                                              i_quantity        = quantity
-                                    IMPORTING o_stock           = stock
-                                              o_available_stock = available_stock
-                                              o_availability    = availability
-                                              o_criticality     = criticality ).
-            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
-            wa_item_create = VALUE #(
-                %is_draft  = is_draft
-                MatrixUUID = i_matrixuuid
-                %target = VALUE #( (
-                    %is_draft       = is_draft
-                    %cid            = cid
-                    ItemID          = cid
-                    MatrixUUID      = i_matrixuuid
-                    Cupsize         = cupsize
-                    Backsize        = backsize
-                    Quantity        = quantity
-                    Model           = model
-                    Color           = color
-                    Product         = product
-                    Stock           = stock
-                    AvailableStock  = available_stock
-                    Availability    = availability
-                    Criticality01   = criticality
-                    ProductURL      = productURL
-                ) )
-            ).
-            APPEND wa_item_create TO it_item_create.
-        ENDIF.
-        IF ( ( wa_size-h IS NOT INITIAL ) AND ( ls_sizehead2-h IS NOT INITIAL ) ).
-            maxid = maxid + 1.
-            cid = maxid.
-            backsize    = ls_sizehead2-h.
-            cupsize     = wa_size-backsizeid.
-            quantity    = wa_size-h.
-            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-            get_stock_availability( EXPORTING i_plant           = plant
-                                              i_product         = product
-                                              i_quantity        = quantity
-                                    IMPORTING o_stock           = stock
-                                              o_available_stock = available_stock
-                                              o_availability    = availability
-                                              o_criticality     = criticality ).
-            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
-            wa_item_create = VALUE #(
-                %is_draft  = is_draft
-                MatrixUUID = i_matrixuuid
-                %target = VALUE #( (
-                    %is_draft       = is_draft
-                    %cid            = cid
-                    ItemID          = cid
-                    MatrixUUID      = i_matrixuuid
-                    Cupsize         = cupsize
-                    Backsize        = backsize
-                    Quantity        = quantity
-                    Model           = model
-                    Color           = color
-                    Product         = product
-                    Stock           = stock
-                    AvailableStock  = available_stock
-                    Availability    = availability
-                    Criticality01   = criticality
-                    ProductURL      = productURL
-                ) )
-            ).
-            APPEND wa_item_create TO it_item_create.
-        ENDIF.
-        IF ( ( wa_size-i IS NOT INITIAL ) AND ( ls_sizehead2-i IS NOT INITIAL ) ).
-            maxid = maxid + 1.
-            cid = maxid.
-            backsize    = ls_sizehead2-i.
-            cupsize     = wa_size-backsizeid.
-            quantity    = wa_size-i.
-            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-            get_stock_availability( EXPORTING i_plant           = plant
-                                              i_product         = product
-                                              i_quantity        = quantity
-                                    IMPORTING o_stock           = stock
-                                              o_available_stock = available_stock
-                                              o_availability    = availability
-                                              o_criticality     = criticality ).
-            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
-            wa_item_create = VALUE #(
-                %is_draft  = is_draft
-                MatrixUUID = i_matrixuuid
-                %target = VALUE #( (
-                    %is_draft       = is_draft
-                    %cid            = cid
-                    ItemID          = cid
-                    MatrixUUID      = i_matrixuuid
-                    Cupsize         = cupsize
-                    Backsize        = backsize
-                    Quantity        = quantity
-                    Model           = model
-                    Color           = color
-                    Product         = product
-                    Stock           = stock
-                    AvailableStock  = available_stock
-                    Availability    = availability
-                    Criticality01   = criticality
-                    ProductURL      = productURL
-                ) )
-            ).
-            APPEND wa_item_create TO it_item_create.
-        ENDIF.
-        IF ( ( wa_size-j IS NOT INITIAL ) AND ( ls_sizehead2-j IS NOT INITIAL ) ).
-            maxid = maxid + 1.
-            cid = maxid.
-            backsize    = ls_sizehead2-j.
-            cupsize     = wa_size-backsizeid.
-            quantity    = wa_size-j.
-            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-            get_stock_availability( EXPORTING i_plant           = plant
-                                              i_product         = product
-                                              i_quantity        = quantity
-                                    IMPORTING o_stock           = stock
-                                              o_available_stock = available_stock
-                                              o_availability    = availability
-                                              o_criticality     = criticality ).
-            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
-            wa_item_create = VALUE #(
-                %is_draft  = is_draft
-                MatrixUUID = i_matrixuuid
-                %target = VALUE #( (
-                    %is_draft       = is_draft
-                    %cid            = cid
-                    ItemID          = cid
-                    MatrixUUID      = i_matrixuuid
-                    Cupsize         = cupsize
-                    Backsize        = backsize
-                    Quantity        = quantity
-                    Model           = model
-                    Color           = color
-                    Product         = product
-                    Stock           = stock
-                    AvailableStock  = available_stock
-                    Availability    = availability
-                    Criticality01   = criticality
-                    ProductURL      = productURL
-                ) )
-            ).
-            APPEND wa_item_create TO it_item_create.
-        ENDIF.
-        IF ( ( wa_size-k IS NOT INITIAL ) AND ( ls_sizehead2-k IS NOT INITIAL ) ).
-            maxid = maxid + 1.
-            cid = maxid.
-            backsize    = ls_sizehead2-k.
-            cupsize     = wa_size-backsizeid.
-            quantity    = wa_size-k.
-            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-            get_stock_availability( EXPORTING i_plant           = plant
-                                              i_product         = product
-                                              i_quantity        = quantity
-                                    IMPORTING o_stock           = stock
-                                              o_available_stock = available_stock
-                                              o_availability    = availability
-                                              o_criticality     = criticality ).
-            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
-            wa_item_create = VALUE #(
-                %is_draft  = is_draft
-                MatrixUUID = i_matrixuuid
-                %target = VALUE #( (
-                    %is_draft       = is_draft
-                    %cid            = cid
-                    ItemID          = cid
-                    MatrixUUID      = i_matrixuuid
-                    Cupsize         = cupsize
-                    Backsize        = backsize
-                    Quantity        = quantity
-                    Model           = model
-                    Color           = color
-                    Product         = product
-                    Stock           = stock
-                    AvailableStock  = available_stock
-                    Availability    = availability
-                    Criticality01   = criticality
-                    ProductURL      = productURL
-                ) )
-            ).
-            APPEND wa_item_create TO it_item_create.
-        ENDIF.
-        IF ( ( wa_size-l IS NOT INITIAL ) AND ( ls_sizehead2-l IS NOT INITIAL ) ).
-            maxid = maxid + 1.
-            cid = maxid.
-            backsize    = ls_sizehead2-l.
-            cupsize     = wa_size-backsizeid.
-            quantity    = wa_size-l.
-            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
-            get_stock_availability( EXPORTING i_plant           = plant
-                                              i_product         = product
-                                              i_quantity        = quantity
-                                    IMPORTING o_stock           = stock
-                                              o_available_stock = available_stock
-                                              o_availability    = availability
-                                              o_criticality     = criticality ).
-            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
-            wa_item_create = VALUE #(
-                %is_draft  = is_draft
-                MatrixUUID = i_matrixuuid
-                %target = VALUE #( (
-                    %is_draft       = is_draft
-                    %cid            = cid
-                    ItemID          = cid
-                    MatrixUUID      = i_matrixuuid
-                    Cupsize         = cupsize
-                    Backsize        = backsize
-                    Quantity        = quantity
-                    Model           = model
-                    Color           = color
-                    Product         = product
-                    Stock           = stock
-                    AvailableStock  = available_stock
-                    Availability    = availability
-                    Criticality01   = criticality
-                    ProductURL      = productURL
-                ) )
-            ).
-            APPEND wa_item_create TO it_item_create.
-        ENDIF.
-
+*   Add New Items based on Actual Size table (new)
+    SPLIT 'a:01 b:02 c:03 d:04 e:05 f:06 g:07 h:08 i:09 j:10 k:11 l:12' AT space INTO TABLE DATA(columns).
+    LOOP AT lt_size INTO DATA(ls_size). " Cup
+        LOOP AT columns INTO DATA(column). " Back
+            SPLIT column AT ':' INTO DATA(s1) DATA(s2).
+*            s2 = 'Criticality' && s2.
+            DATA name  TYPE string. " Column Name (DE)
+            DATA value TYPE string. " Cell Value
+            name  = ls_sizehead2-(s1).
+            value = ls_size-(s1).
+            IF ( ( name IS NOT INITIAL ) AND ( value IS NOT INITIAL ) AND ( value CO '1234567890' ) ).
+                maxid = maxid + 1.
+                cid = maxid.
+                backsize    = ls_sizehead2-(s1).
+                cupsize     = ls_size-backsizeid.
+                product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+                quantity    = value.
+                get_stock_availability( EXPORTING i_plant           = plant
+                                                  i_product         = product
+                                                  i_quantity        = quantity
+                                        IMPORTING o_stock           = stock
+                                                  o_available_stock = available_stock
+                                                  o_availability    = availability
+                                                  o_criticality     = criticality ).
+*                productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+                productURL  = '/ui#Material-manage&/C_Product(Product=''' && product && ''',DraftUUID=guid''00000000-0000-0000-0000-000000000000'',IsActiveEntity=true)'.
+                APPEND VALUE #(
+                    %is_draft  = is_draft
+                    MatrixUUID = i_matrixuuid
+                    %target = VALUE #( (
+                        %is_draft       = is_draft
+                        %cid            = cid
+                        ItemID          = cid
+                        MatrixUUID      = i_matrixuuid
+                        Cupsize         = cupsize
+                        Backsize        = backsize
+                        Quantity        = quantity
+                        Model           = model
+                        Color           = color
+                        Product         = product
+                        Stock           = stock
+                        AvailableStock  = available_stock
+                        Availability    = availability
+                        Criticality01   = criticality
+                        ProductURL      = productURL
+                    ) )
+                ) TO it_item_create.
+            ENDIF.
+        ENDLOOP.
     ENDLOOP.
+
+**   Add New Items based on Actual Size table (obsolete)
+*    LOOP AT lt_size INTO DATA(wa_size).
+*        IF ( ( wa_size-a IS NOT INITIAL ) AND ( ls_sizehead2-a IS NOT INITIAL ) ).
+*            maxid = maxid + 1.
+*            cid = maxid.
+*            backsize    = ls_sizehead2-a.
+*            cupsize     = wa_size-backsizeid.
+*            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+*            quantity    = wa_size-a.
+*            get_stock_availability( EXPORTING i_plant           = plant
+*                                              i_product         = product
+*                                              i_quantity        = quantity
+*                                    IMPORTING o_stock           = stock
+*                                              o_available_stock = available_stock
+*                                              o_availability    = availability
+*                                              o_criticality     = criticality ).
+*            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+*            wa_item_create = VALUE #(
+*                %is_draft  = is_draft
+*                MatrixUUID = i_matrixuuid
+*                %target = VALUE #( (
+*                    %is_draft       = is_draft
+*                    %cid            = cid
+*                    ItemID          = cid
+*                    MatrixUUID      = i_matrixuuid
+*                    Cupsize         = cupsize
+*                    Backsize        = backsize
+*                    Quantity        = quantity
+*                    Model           = model
+*                    Color           = color
+*                    Product         = product
+*                    Stock           = stock
+*                    AvailableStock  = available_stock
+*                    Availability    = availability
+*                    Criticality01   = criticality
+*                    ProductURL      = productURL
+*                ) )
+*            ).
+*            APPEND wa_item_create TO it_item_create.
+*        ENDIF.
+*        IF ( ( wa_size-b IS NOT INITIAL ) AND ( ls_sizehead2-b IS NOT INITIAL ) ).
+*            maxid = maxid + 1.
+*            cid = maxid.
+*            backsize    = ls_sizehead2-b.
+*            cupsize     = wa_size-backsizeid.
+*            quantity    = wa_size-b.
+*            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+*            get_stock_availability( EXPORTING i_plant           = plant
+*                                              i_product         = product
+*                                              i_quantity        = quantity
+*                                    IMPORTING o_stock           = stock
+*                                              o_available_stock = available_stock
+*                                              o_availability    = availability
+*                                              o_criticality     = criticality ).
+*            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+*            wa_item_create = VALUE #(
+*                %is_draft  = is_draft
+*                MatrixUUID = i_matrixuuid
+*                %target = VALUE #( (
+*                    %is_draft       = is_draft
+*                    %cid            = cid
+*                    ItemID          = cid
+*                    MatrixUUID      = i_matrixuuid
+*                    Cupsize         = cupsize
+*                    Backsize        = backsize
+*                    Quantity        = quantity
+*                    Model           = model
+*                    Color           = color
+*                    Product         = product
+*                    Stock           = stock
+*                    AvailableStock  = available_stock
+*                    Availability    = availability
+*                    Criticality01   = criticality
+*                    ProductURL      = productURL
+*                ) )
+*            ).
+*            APPEND wa_item_create TO it_item_create.
+*        ENDIF.
+*        IF ( ( wa_size-c IS NOT INITIAL ) AND ( ls_sizehead2-c IS NOT INITIAL ) ).
+*            maxid = maxid + 1.
+*            cid = maxid.
+*            backsize    = ls_sizehead2-c.
+*            cupsize     = wa_size-backsizeid.
+*            quantity    = wa_size-c.
+*            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+*            get_stock_availability( EXPORTING i_plant           = plant
+*                                              i_product         = product
+*                                              i_quantity        = quantity
+*                                    IMPORTING o_stock           = stock
+*                                              o_available_stock = available_stock
+*                                              o_availability    = availability
+*                                              o_criticality     = criticality ).
+*            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+*            wa_item_create = VALUE #(
+*                %is_draft  = is_draft
+*                MatrixUUID = i_matrixuuid
+*                %target = VALUE #( (
+*                    %is_draft       = is_draft
+*                    %cid            = cid
+*                    ItemID          = cid
+*                    MatrixUUID      = i_matrixuuid
+*                    Cupsize         = cupsize
+*                    Backsize        = backsize
+*                    Quantity        = quantity
+*                    Model           = model
+*                    Color           = color
+*                    Product         = product
+*                    Stock           = stock
+*                    AvailableStock  = available_stock
+*                    Availability    = availability
+*                    Criticality01   = criticality
+*                    ProductURL      = productURL
+*                ) )
+*            ).
+*            APPEND wa_item_create TO it_item_create.
+*        ENDIF.
+*        IF ( ( wa_size-d IS NOT INITIAL ) AND ( ls_sizehead2-d IS NOT INITIAL ) ).
+*            maxid = maxid + 1.
+*            cid = maxid.
+*            backsize    = ls_sizehead2-d.
+*            cupsize     = wa_size-backsizeid.
+*            quantity    = wa_size-d.
+*            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+*            get_stock_availability( EXPORTING i_plant           = plant
+*                                              i_product         = product
+*                                              i_quantity        = quantity
+*                                    IMPORTING o_stock           = stock
+*                                              o_available_stock = available_stock
+*                                              o_availability    = availability
+*                                              o_criticality     = criticality ).
+*            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+*            wa_item_create = VALUE #(
+*                %is_draft  = is_draft
+*                MatrixUUID = i_matrixuuid
+*                %target = VALUE #( (
+*                    %is_draft       = is_draft
+*                    %cid            = cid
+*                    ItemID          = cid
+*                    MatrixUUID      = i_matrixuuid
+*                    Cupsize         = cupsize
+*                    Backsize        = backsize
+*                    Quantity        = quantity
+*                    Model           = model
+*                    Color           = color
+*                    Product         = product
+*                    Stock           = stock
+*                    AvailableStock  = available_stock
+*                    Availability    = availability
+*                    Criticality01   = criticality
+*                    ProductURL      = productURL
+*                ) )
+*            ).
+*            APPEND wa_item_create TO it_item_create.
+*        ENDIF.
+*        IF ( ( wa_size-e IS NOT INITIAL ) AND ( ls_sizehead2-e IS NOT INITIAL ) ).
+*            maxid = maxid + 1.
+*            cid = maxid.
+*            backsize    = ls_sizehead2-e.
+*            cupsize     = wa_size-backsizeid.
+*            quantity    = wa_size-e.
+*            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+*            get_stock_availability( EXPORTING i_plant           = plant
+*                                              i_product         = product
+*                                              i_quantity        = quantity
+*                                    IMPORTING o_stock           = stock
+*                                              o_available_stock = available_stock
+*                                              o_availability    = availability
+*                                              o_criticality     = criticality ).
+*            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+*            wa_item_create = VALUE #(
+*                %is_draft  = is_draft
+*                MatrixUUID = i_matrixuuid
+*                %target = VALUE #( (
+*                    %is_draft       = is_draft
+*                    %cid            = cid
+*                    ItemID          = cid
+*                    MatrixUUID      = i_matrixuuid
+*                    Cupsize         = cupsize
+*                    Backsize        = backsize
+*                    Quantity        = quantity
+*                    Model           = model
+*                    Color           = color
+*                    Product         = product
+*                    Stock           = stock
+*                    AvailableStock  = available_stock
+*                    Availability    = availability
+*                    Criticality01   = criticality
+*                    ProductURL      = productURL
+*                ) )
+*            ).
+*            APPEND wa_item_create TO it_item_create.
+*        ENDIF.
+*        IF ( ( wa_size-f IS NOT INITIAL ) AND ( ls_sizehead2-f IS NOT INITIAL ) ).
+*            maxid = maxid + 1.
+*            cid = maxid.
+*            backsize    = ls_sizehead2-f.
+*            cupsize     = wa_size-backsizeid.
+*            quantity    = wa_size-f.
+*            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+*            get_stock_availability( EXPORTING i_plant           = plant
+*                                              i_product         = product
+*                                              i_quantity        = quantity
+*                                    IMPORTING o_stock           = stock
+*                                              o_available_stock = available_stock
+*                                              o_availability    = availability
+*                                              o_criticality     = criticality ).
+*            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+*            wa_item_create = VALUE #(
+*                %is_draft  = is_draft
+*                MatrixUUID = i_matrixuuid
+*                %target = VALUE #( (
+*                    %is_draft       = is_draft
+*                    %cid            = cid
+*                    ItemID          = cid
+*                    MatrixUUID      = i_matrixuuid
+*                    Cupsize         = cupsize
+*                    Backsize        = backsize
+*                    Quantity        = quantity
+*                    Model           = model
+*                    Color           = color
+*                    Product         = product
+*                    Stock           = stock
+*                    AvailableStock  = available_stock
+*                    Availability    = availability
+*                    Criticality01   = criticality
+*                    ProductURL      = productURL
+*                ) )
+*            ).
+*            APPEND wa_item_create TO it_item_create.
+*        ENDIF.
+*        IF ( ( wa_size-g IS NOT INITIAL ) AND ( ls_sizehead2-g IS NOT INITIAL ) ).
+*            maxid = maxid + 1.
+*            cid = maxid.
+*            backsize    = ls_sizehead2-g.
+*            cupsize     = wa_size-backsizeid.
+*            quantity    = wa_size-g.
+*            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+*            get_stock_availability( EXPORTING i_plant           = plant
+*                                              i_product         = product
+*                                              i_quantity        = quantity
+*                                    IMPORTING o_stock           = stock
+*                                              o_available_stock = available_stock
+*                                              o_availability    = availability
+*                                              o_criticality     = criticality ).
+*            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+*            wa_item_create = VALUE #(
+*                %is_draft  = is_draft
+*                MatrixUUID = i_matrixuuid
+*                %target = VALUE #( (
+*                    %is_draft       = is_draft
+*                    %cid            = cid
+*                    ItemID          = cid
+*                    MatrixUUID      = i_matrixuuid
+*                    Cupsize         = cupsize
+*                    Backsize        = backsize
+*                    Quantity        = quantity
+*                    Model           = model
+*                    Color           = color
+*                    Product         = product
+*                    Stock           = stock
+*                    AvailableStock  = available_stock
+*                    Availability    = availability
+*                    Criticality01   = criticality
+*                    ProductURL      = productURL
+*                ) )
+*            ).
+*            APPEND wa_item_create TO it_item_create.
+*        ENDIF.
+*        IF ( ( wa_size-h IS NOT INITIAL ) AND ( ls_sizehead2-h IS NOT INITIAL ) ).
+*            maxid = maxid + 1.
+*            cid = maxid.
+*            backsize    = ls_sizehead2-h.
+*            cupsize     = wa_size-backsizeid.
+*            quantity    = wa_size-h.
+*            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+*            get_stock_availability( EXPORTING i_plant           = plant
+*                                              i_product         = product
+*                                              i_quantity        = quantity
+*                                    IMPORTING o_stock           = stock
+*                                              o_available_stock = available_stock
+*                                              o_availability    = availability
+*                                              o_criticality     = criticality ).
+*            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+*            wa_item_create = VALUE #(
+*                %is_draft  = is_draft
+*                MatrixUUID = i_matrixuuid
+*                %target = VALUE #( (
+*                    %is_draft       = is_draft
+*                    %cid            = cid
+*                    ItemID          = cid
+*                    MatrixUUID      = i_matrixuuid
+*                    Cupsize         = cupsize
+*                    Backsize        = backsize
+*                    Quantity        = quantity
+*                    Model           = model
+*                    Color           = color
+*                    Product         = product
+*                    Stock           = stock
+*                    AvailableStock  = available_stock
+*                    Availability    = availability
+*                    Criticality01   = criticality
+*                    ProductURL      = productURL
+*                ) )
+*            ).
+*            APPEND wa_item_create TO it_item_create.
+*        ENDIF.
+*        IF ( ( wa_size-i IS NOT INITIAL ) AND ( ls_sizehead2-i IS NOT INITIAL ) ).
+*            maxid = maxid + 1.
+*            cid = maxid.
+*            backsize    = ls_sizehead2-i.
+*            cupsize     = wa_size-backsizeid.
+*            quantity    = wa_size-i.
+*            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+*            get_stock_availability( EXPORTING i_plant           = plant
+*                                              i_product         = product
+*                                              i_quantity        = quantity
+*                                    IMPORTING o_stock           = stock
+*                                              o_available_stock = available_stock
+*                                              o_availability    = availability
+*                                              o_criticality     = criticality ).
+*            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+*            wa_item_create = VALUE #(
+*                %is_draft  = is_draft
+*                MatrixUUID = i_matrixuuid
+*                %target = VALUE #( (
+*                    %is_draft       = is_draft
+*                    %cid            = cid
+*                    ItemID          = cid
+*                    MatrixUUID      = i_matrixuuid
+*                    Cupsize         = cupsize
+*                    Backsize        = backsize
+*                    Quantity        = quantity
+*                    Model           = model
+*                    Color           = color
+*                    Product         = product
+*                    Stock           = stock
+*                    AvailableStock  = available_stock
+*                    Availability    = availability
+*                    Criticality01   = criticality
+*                    ProductURL      = productURL
+*                ) )
+*            ).
+*            APPEND wa_item_create TO it_item_create.
+*        ENDIF.
+*        IF ( ( wa_size-j IS NOT INITIAL ) AND ( ls_sizehead2-j IS NOT INITIAL ) ).
+*            maxid = maxid + 1.
+*            cid = maxid.
+*            backsize    = ls_sizehead2-j.
+*            cupsize     = wa_size-backsizeid.
+*            quantity    = wa_size-j.
+*            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+*            get_stock_availability( EXPORTING i_plant           = plant
+*                                              i_product         = product
+*                                              i_quantity        = quantity
+*                                    IMPORTING o_stock           = stock
+*                                              o_available_stock = available_stock
+*                                              o_availability    = availability
+*                                              o_criticality     = criticality ).
+*            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+*            wa_item_create = VALUE #(
+*                %is_draft  = is_draft
+*                MatrixUUID = i_matrixuuid
+*                %target = VALUE #( (
+*                    %is_draft       = is_draft
+*                    %cid            = cid
+*                    ItemID          = cid
+*                    MatrixUUID      = i_matrixuuid
+*                    Cupsize         = cupsize
+*                    Backsize        = backsize
+*                    Quantity        = quantity
+*                    Model           = model
+*                    Color           = color
+*                    Product         = product
+*                    Stock           = stock
+*                    AvailableStock  = available_stock
+*                    Availability    = availability
+*                    Criticality01   = criticality
+*                    ProductURL      = productURL
+*                ) )
+*            ).
+*            APPEND wa_item_create TO it_item_create.
+*        ENDIF.
+*        IF ( ( wa_size-k IS NOT INITIAL ) AND ( ls_sizehead2-k IS NOT INITIAL ) ).
+*            maxid = maxid + 1.
+*            cid = maxid.
+*            backsize    = ls_sizehead2-k.
+*            cupsize     = wa_size-backsizeid.
+*            quantity    = wa_size-k.
+*            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+*            get_stock_availability( EXPORTING i_plant           = plant
+*                                              i_product         = product
+*                                              i_quantity        = quantity
+*                                    IMPORTING o_stock           = stock
+*                                              o_available_stock = available_stock
+*                                              o_availability    = availability
+*                                              o_criticality     = criticality ).
+*            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+*            wa_item_create = VALUE #(
+*                %is_draft  = is_draft
+*                MatrixUUID = i_matrixuuid
+*                %target = VALUE #( (
+*                    %is_draft       = is_draft
+*                    %cid            = cid
+*                    ItemID          = cid
+*                    MatrixUUID      = i_matrixuuid
+*                    Cupsize         = cupsize
+*                    Backsize        = backsize
+*                    Quantity        = quantity
+*                    Model           = model
+*                    Color           = color
+*                    Product         = product
+*                    Stock           = stock
+*                    AvailableStock  = available_stock
+*                    Availability    = availability
+*                    Criticality01   = criticality
+*                    ProductURL      = productURL
+*                ) )
+*            ).
+*            APPEND wa_item_create TO it_item_create.
+*        ENDIF.
+*        IF ( ( wa_size-l IS NOT INITIAL ) AND ( ls_sizehead2-l IS NOT INITIAL ) ).
+*            maxid = maxid + 1.
+*            cid = maxid.
+*            backsize    = ls_sizehead2-l.
+*            cupsize     = wa_size-backsizeid.
+*            quantity    = wa_size-l.
+*            product     = model && '-' && color && '-' && cupsize && '-' && backsize.
+*            get_stock_availability( EXPORTING i_plant           = plant
+*                                              i_product         = product
+*                                              i_quantity        = quantity
+*                                    IMPORTING o_stock           = stock
+*                                              o_available_stock = available_stock
+*                                              o_availability    = availability
+*                                              o_criticality     = criticality ).
+*            productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+*            wa_item_create = VALUE #(
+*                %is_draft  = is_draft
+*                MatrixUUID = i_matrixuuid
+*                %target = VALUE #( (
+*                    %is_draft       = is_draft
+*                    %cid            = cid
+*                    ItemID          = cid
+*                    MatrixUUID      = i_matrixuuid
+*                    Cupsize         = cupsize
+*                    Backsize        = backsize
+*                    Quantity        = quantity
+*                    Model           = model
+*                    Color           = color
+*                    Product         = product
+*                    Stock           = stock
+*                    AvailableStock  = available_stock
+*                    Availability    = availability
+*                    Criticality01   = criticality
+*                    ProductURL      = productURL
+*                ) )
+*            ).
+*            APPEND wa_item_create TO it_item_create.
+*        ENDIF.
+*
+*    ENDLOOP.
 
     " Create New Items
     MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
@@ -2434,6 +2275,34 @@ CLASS lhc_matrix IMPLEMENTATION.
     ENDLOOP.
 
   ENDMETHOD. " sizes_to_items
+
+* Check Materials and Update Quantity on Sizes
+  METHOD check_sizes.
+
+      " Read transfered instances
+    READ ENTITIES OF zi_matrix_005  IN LOCAL MODE
+        ENTITY Matrix
+        ALL FIELDS
+        WITH CORRESPONDING #( keys )
+        RESULT DATA(entities).
+
+    LOOP AT entities ASSIGNING FIELD-SYMBOL(<entity>).
+
+        IF ( <entity>-%is_draft = '00' ). " Saved
+*           APPEND VALUE #( %key = key-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'ATP check - not yet implemented (saved mode).' ) ) TO reported-matrix.
+
+*           Check Material and Update Quantity on Sizes
+            check_sizes_internal( <entity>-MatrixUUID ).
+
+        ENDIF.
+
+        IF ( <entity>-%is_draft = '01' ). " Draft
+*           APPEND VALUE #( %key = key-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'ATP check - not yet implemented (saved mode).' ) ) TO reported-matrix.
+        ENDIF.
+
+    ENDLOOP.
+
+  ENDMETHOD. " check_sizes
 
 * Get Sales Order and Update Matrix Items
   METHOD get_sales_order_internal.
@@ -2492,7 +2361,8 @@ CLASS lhc_matrix IMPLEMENTATION.
         SPLIT product AT '-' INTO model color cupsize backsize.
         quantity = round( val  = ls_salesorder_item-RequestedQuantity dec  = 0 ).
         CONDENSE quantity NO-GAPS.
-        productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+*        productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+        productURL  = '/ui#Material-manage&/C_Product(Product=''' && product && ''',DraftUUID=guid''00000000-0000-0000-0000-000000000000'',IsActiveEntity=true)'.
 
         APPEND VALUE #(
             MatrixUUID = i_matrixuuid
@@ -2621,6 +2491,128 @@ CLASS lhc_matrix IMPLEMENTATION.
 
   ENDMETHOD. " get_sales_order_internal
 
+  METHOD check_product_internal. " Check the Material (exists or does not)
+
+        exists = abap_false.
+        IF ( i_product IS NOT INITIAL ).
+            READ ENTITIES OF I_ProductTP_2
+                ENTITY Product
+                FIELDS ( Product IsMarkedForDeletion )
+                WITH VALUE #( ( %key-Product = i_product ) )
+                RESULT DATA(lt_product)
+                FAILED DATA(ls_failed)
+                REPORTED DATA(ls_reported).
+            LOOP AT lt_product INTO DATA(ls_product) WHERE ( IsMarkedForDeletion = abap_false ).
+                exists = abap_true.
+            ENDLOOP.
+        ENDIF.
+
+  ENDMETHOD. " check_product_internal
+
+  METHOD check_sizes_internal. " Check Materials (exists or doesn't) and Update Value on Sizes
+
+    DATA it_size_update TYPE TABLE FOR UPDATE zi_matrix_005\\Size. " Size
+
+    DATA model          TYPE string.
+    DATA color          TYPE string.
+    DATA cupsize        TYPE string.
+    DATA backsize       TYPE string.
+    DATA product        TYPE string.
+    DATA criticality    TYPE string.
+
+*   Read Actual Matrix (node)
+    READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+        ENTITY Matrix
+        ALL FIELDS
+        WITH VALUE #( (
+*            %tky = <entity>-%tky
+            MatrixUUID = i_matrixuuid
+        ) )
+        RESULT DATA(lt_matrix)
+        FAILED DATA(ls_failed1)
+        REPORTED DATA(ls_reported1).
+
+    READ TABLE lt_matrix INDEX 1 INTO DATA(ls_matrix).
+
+*   Read Actual SizeHead
+    READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+        ENTITY Matrix
+        BY \_SizeHead
+        ALL FIELDS
+        WITH VALUE #( (
+*            %tky = <entity>-%tky
+            MatrixUUID = i_matrixuuid
+        ) )
+        RESULT DATA(lt_sizehead)
+        FAILED DATA(ls_failed2)
+        REPORTED DATA(ls_reported2).
+
+    READ TABLE lt_sizehead INTO DATA(ls_sizehead1) WITH KEY SizeID = '1'.
+    READ TABLE lt_sizehead INTO DATA(ls_sizehead2) WITH KEY SizeID = '2'.
+
+*   Read Actual Sizes
+    READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+        ENTITY Matrix
+        BY \_Size
+        ALL FIELDS
+        WITH VALUE #( (
+*            %tky = <entity>-%tky
+            MatrixUUID = i_matrixuuid
+        ) )
+        RESULT DATA(lt_size)
+        FAILED DATA(ls_failed3)
+        REPORTED DATA(ls_reported3).
+
+    SORT lt_size STABLE BY SizeID.
+
+    model = ls_matrix-Model.
+    color = ls_matrix-Color.
+    SPLIT 'a:01 b:02 c:03 d:04 e:05 f:06 g:07 h:08 i:09 j:10 k:11 l:12' AT space INTO TABLE DATA(cols).
+    LOOP AT lt_size INTO DATA(ls_size). " Cup
+        LOOP AT cols INTO DATA(col). " Back
+            SPLIT col AT ':' INTO DATA(s1) DATA(s2).
+             s2 = 'Criticality' && s2.
+             IF ( ( ls_size-(s1) = ' ' ) OR ( ls_size-(s1) = '-' ) ).
+                cupsize     = ls_size-BackSizeID.
+                backsize    = ls_sizehead2-(s1). " ls_sizehead2-a
+                CONCATENATE model color cupsize backsize INTO product SEPARATED BY '-'.
+                DATA(exists) = check_product_internal( product ).
+                IF ( exists = abap_true ).
+                    ls_size-(s1) = ' '. " ls_size-a
+                ELSE.
+                    ls_size-(s1) = '-'. " ls_size-a
+                ENDIF.
+            ENDIF.
+        ENDLOOP.
+        APPEND VALUE #(
+            %key-MatrixUUID = ls_size-MatrixUUID
+            %key-SizeID     = ls_size-SizeID
+            a               = ls_size-a
+            b               = ls_size-b
+            c               = ls_size-c
+            d               = ls_size-d
+            e               = ls_size-e
+            f               = ls_size-f
+            g               = ls_size-g
+            h               = ls_size-h
+            i               = ls_size-i
+            j               = ls_size-j
+            k               = ls_size-k
+            l               = ls_size-l
+        )
+        TO it_size_update.
+    ENDLOOP.
+
+    MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+        ENTITY Size
+        UPDATE FIELDS ( a b c d e f g h i j k l )
+        WITH it_size_update
+        MAPPED DATA(ls_mapped4)
+        FAILED DATA(ls_failed4)
+        REPORTED DATA(ls_reported4).
+
+  ENDMETHOD. " check_sizes_internal
+
 ENDCLASS. " lhc_matrix IMPLEMENTATION.
 
 
@@ -2635,6 +2627,22 @@ CLASS lsc_zi_matrix_005 DEFINITION INHERITING FROM cl_abap_behavior_saver.
     METHODS new_message_with_text REDEFINITION.
 
     METHODS new_message REDEFINITION.
+
+  PRIVATE SECTION.
+
+*   Internal methods
+
+*   Check the Material (exists or does not)
+    METHODS check_product_internal
+      IMPORTING
+        VALUE(i_product)            TYPE string
+      RETURNING
+        VALUE(exists)               TYPE abap_boolean.
+
+*   Check Materials (exists or doesn't) and Update Status on Sizes
+    METHODS check_sizes_internal
+      IMPORTING
+        VALUE(i_matrixuuid)        TYPE zi_matrix_005-MatrixUUID.
 
 ENDCLASS.
 
@@ -2660,6 +2668,11 @@ CLASS lsc_zi_matrix_005 IMPLEMENTATION.
 
     ENDLOOP.
 
+*    IF ( zbp_i_matrix_005=>mapped_matrix_uuid IS NOT INITIAL ).
+*       Check Material and Update Quantity on Sizes
+*        check_sizes_internal( zbp_i_matrix_005=>mapped_matrix_uuid ).
+*    ENDIF.
+
   ENDMETHOD. " save_modified
 
   METHOD cleanup_finalize.
@@ -2671,4 +2684,116 @@ CLASS lsc_zi_matrix_005 IMPLEMENTATION.
   METHOD new_message_with_text.
   ENDMETHOD.
 
-ENDCLASS.
+* Internal Methods:
+
+  METHOD check_product_internal. " Check the Material (exists or does not)
+
+        exists = abap_false.
+        IF ( i_product IS NOT INITIAL ).
+            READ ENTITIES OF I_ProductTP_2
+                ENTITY Product
+                FIELDS ( Product IsMarkedForDeletion )
+                WITH VALUE #( ( %key-Product = i_product ) )
+                RESULT DATA(lt_product)
+                FAILED DATA(ls_failed)
+                REPORTED DATA(ls_reported).
+            LOOP AT lt_product INTO DATA(ls_product) WHERE ( IsMarkedForDeletion = abap_false ).
+                exists = abap_true.
+            ENDLOOP.
+        ENDIF.
+
+  ENDMETHOD. " check_product_internal
+
+  METHOD check_sizes_internal. " Check Materials (exists or doesn't) and Update Value on Sizes
+
+    DATA model          TYPE string.
+    DATA color          TYPE string.
+    DATA cupsize        TYPE string.
+    DATA backsize       TYPE string.
+    DATA product        TYPE string.
+    DATA criticality    TYPE string.
+
+*   Read Actual Matrix (node)
+    READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+        ENTITY Matrix
+        ALL FIELDS
+        WITH VALUE #( (
+*            %tky = <entity>-%tky
+            MatrixUUID = i_matrixuuid
+        ) )
+        RESULT DATA(lt_matrix)
+        FAILED DATA(ls_failed1)
+        REPORTED DATA(ls_reported1).
+
+    READ TABLE lt_matrix INDEX 1 INTO DATA(ls_matrix).
+
+*   Read Actual SizeHead
+    READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+        ENTITY Matrix
+        BY \_SizeHead
+        ALL FIELDS
+        WITH VALUE #( (
+*            %tky = <entity>-%tky
+            MatrixUUID = i_matrixuuid
+        ) )
+        RESULT DATA(lt_sizehead)
+        FAILED DATA(ls_failed2)
+        REPORTED DATA(ls_reported2).
+
+    READ TABLE lt_sizehead INTO DATA(ls_sizehead1) WITH KEY SizeID = '1'.
+    READ TABLE lt_sizehead INTO DATA(ls_sizehead2) WITH KEY SizeID = '2'.
+
+*   Read Actual Sizes
+    READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+        ENTITY Matrix
+        BY \_Size
+        ALL FIELDS
+        WITH VALUE #( (
+*            %tky = <entity>-%tky
+            MatrixUUID = i_matrixuuid
+        ) )
+        RESULT DATA(lt_size)
+        FAILED DATA(ls_failed3)
+        REPORTED DATA(ls_reported3).
+
+    SORT lt_size STABLE BY SizeID.
+
+    model = ls_matrix-Model.
+    color = ls_matrix-Color.
+    SPLIT 'a:01 b:02 c:03 d:04 e:05 f:06 g:07 h:08 i:09 j:10 k:11 l:12' AT space INTO TABLE DATA(columns).
+    LOOP AT lt_size INTO DATA(ls_size). " Cup
+        LOOP AT columns INTO DATA(column). " Back
+            SPLIT column AT ':' INTO DATA(s1) DATA(s2).
+            s2 = 'Criticality' && s2.
+            cupsize     = ls_size-BackSizeID.
+            backsize    = ls_sizehead2-(s1). " ls_sizehead2-a
+            CONCATENATE model color cupsize backsize INTO product SEPARATED BY '-'.
+            DATA(exists) = check_product_internal( product ).
+            IF ( exists = abap_false ).
+                ls_size-(s1) = '-'. " ls_size-a
+            ENDIF.
+        ENDLOOP.
+
+        UPDATE zsize_005
+            SET
+                a = @ls_size-a,
+                b = @ls_size-b,
+                c = @ls_size-c,
+                d = @ls_size-d,
+                e = @ls_size-e,
+                f = @ls_size-f,
+                g = @ls_size-g,
+                h = @ls_size-h,
+                i = @ls_size-i,
+                j = @ls_size-j,
+                k = @ls_size-k,
+                l = @ls_size-l
+            WHERE
+                ( matrixuuid    = @ls_size-MatrixUUID ) AND
+                ( sizeid        = @ls_size-SizeID ).
+
+    ENDLOOP.
+
+  ENDMETHOD. " check_sizes_internal
+
+ENDCLASS. " lsc_zi_matrix_005 IMPLEMENTATION
