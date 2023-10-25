@@ -15,13 +15,15 @@ annotate entity ZC_ITEM_005 with
         }
     ]
 
-    //@UI: {  lineItem:       [ { position: 10, label: 'Matrix UUID', cssDefault.width: '300px' } ],
-    //        identification: [ { position: 10, label: 'Matrix UUID' } ] }
-    //MatrixUUID;
+    @UI: {  lineItem:       [ { position: 10, label: 'Matrix UUID', cssDefault.width: '300px' } ],
+            identification: [ { position: 10, label: 'Matrix UUID' } ] }
+    @UI.hidden:true 
+    MatrixUUID;
 
-    //@UI: {  lineItem:       [ { position: 40, label: 'Item ID', cssDefault.width: '300px' } ],
-    //        identification: [ { position: 40, label: 'Item ID' } ] }
-    //ItemID;
+    @UI: {  lineItem:       [ { position: 20, label: 'Item ID', cssDefault.width: '300px' } ],
+            identification: [ { position: 20, label: 'Item ID' } ] }
+    @UI.hidden:true 
+    ItemID;
 
     @UI: {  lineItem:       [ { position: 40, label: 'Item ID', cssDefault.width: '300px' } ],
             identification: [ { position: 40, label: 'Item ID' } ] }
@@ -29,18 +31,22 @@ annotate entity ZC_ITEM_005 with
 
     @UI: {  lineItem:       [ { position: 50, label: 'Model', cssDefault.width: '300px' } ],
             identification: [ { position: 50, label: 'Model' } ] }
+    @UI.hidden:true 
     Model;
 
     @UI: {  lineItem:       [ { position: 60, label: 'Color', cssDefault.width: '300px' } ],
             identification: [ { position: 60, label: 'Color' } ] }
+    @UI.hidden:true 
     Color;
 
     @UI: {  lineItem:       [ { position: 70, label: 'Cupsize', cssDefault.width: '300px' } ],
             identification: [ { position: 70, label: 'Cupsize' } ] }
+    @UI.hidden:true 
     Cupsize;
 
     @UI: {  lineItem:       [ { position: 80, label: 'Backsize', cssDefault.width: '300px' } ],
             identification: [ { position: 80, label: 'Backsize' } ] }
+    @UI.hidden:true 
     Backsize;
 
     @UI: {  lineItem:       [ { position: 90, label: 'Product', cssDefault.width: '300px', type: #WITH_URL, url: 'ProductURL' } ],
@@ -62,5 +68,26 @@ annotate entity ZC_ITEM_005 with
     @UI: {  lineItem:       [ { position: 130, label: 'Availability', cssDefault.width: '300px', criticality:'Criticality01', criticalityRepresentation: #WITH_ICON } ],
             identification: [ { position: 130, label: 'Availability' } ] }
     Availability;
+
+    @UI.hidden:true 
+    ProductURL;
+
+    @UI.hidden:true 
+    Criticality01;
+
+    @UI.hidden:true 
+    Createdby;
+
+    @UI.hidden:true 
+    Createdat;
+
+    @UI.hidden:true 
+    LastChangedBy;
+
+    @UI.hidden:true 
+    LastChangedAt;
+
+    @UI.hidden:true 
+    LocalLastChangedAt;
 
 }
