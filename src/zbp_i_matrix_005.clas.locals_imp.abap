@@ -28,14 +28,14 @@ CLASS lhc_matrix DEFINITION INHERITING FROM cl_abap_behavior_handler.
     METHODS activate FOR MODIFY
       IMPORTING keys FOR ACTION matrix~activate.
 
-    METHODS on_model_modify FOR DETERMINE ON MODIFY " on modify model
+    METHODS on_model_modify FOR DETERMINE ON MODIFY " on change model
       IMPORTING keys FOR matrix~on_model_modify.
 
     METHODS on_scheme_save FOR DETERMINE ON SAVE " on save model, color, matrix type, country
       IMPORTING keys FOR matrix~on_scheme_save.
 
-    METHODS on_customer_reference_modify FOR DETERMINE ON MODIFY " on modifying Customer Reference
-      IMPORTING keys FOR matrix~on_customer_reference_modify.
+    METHODS on_scheme_modify FOR DETERMINE ON MODIFY " on change scheme or customer reference
+      IMPORTING keys FOR matrix~on_scheme_modify.
 
 *   Check ATP
     METHODS check_atp FOR MODIFY
@@ -740,7 +740,7 @@ CLASS lhc_matrix IMPLEMENTATION.
             ELSE. " Default Behavior
 *               If model/color changed - do not generate items (change scheme instead)
                 IF ( ( wa_matrix-model <> wa_matrix_draft-model ) OR ( wa_matrix-color <> wa_matrix_draft-color ) ).
-                    RETURN.
+*                    RETURN.
                 ENDIF.
             ENDIF.
 
@@ -758,7 +758,7 @@ CLASS lhc_matrix IMPLEMENTATION.
                 i_color         = <entity>-Color
             ).
 
-*           Check if product exists and update Size table
+*           Check if product exists and mark cells in Size table
             check_sizes_internal(
                 is_draft        = <entity>-%is_draft
                 i_matrixuuid    = <entity>-MatrixUUID
@@ -812,6 +812,8 @@ CLASS lhc_matrix IMPLEMENTATION.
   ENDMETHOD. " on_model_modify
 
   METHOD on_scheme_save. " on saving scheme (Model + Color + Matrix Type + Country) after modify
+
+    RETURN.
 
     DATA it_sizehead_create TYPE TABLE FOR CREATE zi_matrix_005\_Sizehead. " Size Head
     DATA it_size_create     TYPE TABLE FOR CREATE zi_matrix_005\_Size. " Size
@@ -1278,7 +1280,7 @@ CLASS lhc_matrix IMPLEMENTATION.
   ENDMETHOD. " on_scheme_save
 
 * On modifying Customer Reference and pressing <enter>
-  METHOD on_customer_reference_modify.
+  METHOD on_scheme_modify.
 
    " Read transfered instances
     READ ENTITIES OF zi_matrix_005  IN LOCAL MODE
@@ -1307,7 +1309,7 @@ CLASS lhc_matrix IMPLEMENTATION.
 
     ENDLOOP.
 
-  ENDMETHOD. " on_customer_reference_modify
+  ENDMETHOD. " on_scheme_modify
 
   METHOD check_atp.
 
@@ -1459,14 +1461,14 @@ CLASS lhc_matrix IMPLEMENTATION.
             IF ( <entity>-Copying = abap_true ). " Copy Color
 *               If model/color changed - do not generate items (change scheme instead)
                 IF ( ( <entity>-model <> wa_matrix-model ) ).
-                    APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'Model changed - Save Data.' ) ) TO reported-matrix.
-                    RETURN.
+*                    APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'Model changed - Save Data.' ) ) TO reported-matrix.
+*                    RETURN.
                 ENDIF.
             ELSE. " Default Behavior
 *               If model/color changed - do not generate items (change scheme instead)
                 IF ( ( <entity>-model <> wa_matrix-model ) OR ( <entity>-color <> wa_matrix-color ) ).
-                    APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'Model/Color changed - Save Data.' ) ) TO reported-matrix.
-                    RETURN.
+*                    APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'Model/Color changed - Save Data.' ) ) TO reported-matrix.
+*                    RETURN.
                 ENDIF.
             ENDIF.
 
@@ -1478,11 +1480,14 @@ CLASS lhc_matrix IMPLEMENTATION.
 *            RETURN.
 *        ENDIF.
 
-*       Generate Items - Convert Sizes To Items
-        sizes_to_items_internal( EXPORTING   is_draft        = <entity>-%is_draft
-                                    i_matrixuuid    = <entity>-MatrixUUID
-                                    i_model         = <entity>-Model
-                                    i_color         = <entity>-Color ).
+*       Convert Sizes To Items ((Re)Generate Items)
+        sizes_to_items_internal(
+            is_draft        = <entity>-%is_draft
+            i_matrixuuid    = <entity>-MatrixUUID
+            i_model         = <entity>-Model
+            i_color         = <entity>-Color
+        ).
+
     ENDLOOP.
 
   ENDMETHOD. " update_items
@@ -1529,10 +1534,12 @@ CLASS lhc_matrix IMPLEMENTATION.
                 APPEND VALUE #( %key = <entity>-%key %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error text = 'Model changed - Save Data.' ) ) TO reported-matrix.
             ELSE.
 *               Generate Items - Convert Sizes To Items
-                sizes_to_items_internal( EXPORTING   is_draft        = <entity>-%is_draft
-                                            i_matrixuuid    = <entity>-MatrixUUID
-                                            i_model         = <entity>-Model
-                                            i_color         = <entity>-Color ).
+                sizes_to_items_internal(
+                    is_draft        = <entity>-%is_draft
+                    i_matrixuuid    = <entity>-MatrixUUID
+                    i_model         = <entity>-Model
+                    i_color         = <entity>-Color
+                ).
             ENDIF.
 
         ENDIF.
@@ -1669,7 +1676,7 @@ CLASS lhc_matrix IMPLEMENTATION.
 
 *   Internal methods:
 
-* Convert Sizes to Items (generate Items on base of Size table)
+* Convert Sizes to Items (generate Items according to Size table)
   METHOD sizes_to_items_internal.
 
     DATA it_item_create TYPE TABLE FOR CREATE zi_matrix_005\_Item. " Item
@@ -1709,7 +1716,10 @@ CLASS lhc_matrix IMPLEMENTATION.
     READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
         ENTITY Matrix
         BY \_Size
-        ALL FIELDS WITH VALUE #( ( %is_draft = is_draft MatrixUUID = i_matrixuuid ) )
+        ALL FIELDS WITH VALUE #( (
+            %is_draft = is_draft
+            MatrixUUID = i_matrixuuid
+        ) )
         RESULT DATA(lt_size)
         FAILED DATA(ls_failed1)
         REPORTED DATA(ls_reported1).
@@ -1758,12 +1768,12 @@ CLASS lhc_matrix IMPLEMENTATION.
             REPORTED DATA(ls_delete_reported).
     ENDLOOP.
 
-*   Read [Actual] Size Head Table
+*   Read Size Head Table
     READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
         ENTITY Matrix
         BY \_Sizehead
         ALL FIELDS WITH VALUE #( (
-            %is_draft  = '00'
+            %is_draft  = is_draft
             MatrixUUID = i_matrixuuid
         ) )
         RESULT DATA(lt_sizehead)
@@ -1791,14 +1801,15 @@ CLASS lhc_matrix IMPLEMENTATION.
                 cupsize     = ls_size-backsizeid.
                 product     = model && '-' && color && '-' && cupsize && '-' && backsize.
                 quantity    = value.
-                get_stock_availability( EXPORTING i_plant           = plant
-                                                  i_product         = product
-                                                  i_quantity        = quantity
-                                        IMPORTING o_stock           = stock
-                                                  o_available_stock = available_stock
-                                                  o_availability    = availability
-                                                  o_criticality     = criticality ).
-*                productURL  = '/ui#Material-displayFactSheet&/C_ProductObjPg(''' && product && ''')'. " '0205286-705-H-075'
+                get_stock_availability(
+                    EXPORTING i_plant           = plant
+                              i_product         = product
+                              i_quantity        = quantity
+                    IMPORTING o_stock           = stock
+                              o_available_stock = available_stock
+                              o_availability    = availability
+                              o_criticality     = criticality
+                ).
                 productURL  = '/ui#Material-manage&/C_Product(Product=''' && product && ''',DraftUUID=guid''00000000-0000-0000-0000-000000000000'',IsActiveEntity=true)'.
                 APPEND VALUE #(
                     %is_draft  = is_draft
@@ -2096,13 +2107,13 @@ CLASS lhc_matrix IMPLEMENTATION.
 
     READ TABLE lt_matrix INDEX 1 INTO DATA(ls_matrix).
 
-*   Read [Actual] SizeHead
+*   Read SizeHead
     READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
         ENTITY Matrix
         BY \_SizeHead
         ALL FIELDS
         WITH VALUE #( (
-            %tky-%is_draft  = '00'
+            %tky-%is_draft  = is_draft
             %tky-MatrixUUID = i_matrixuuid
         ) )
         RESULT DATA(lt_sizehead)
@@ -2182,8 +2193,8 @@ CLASS lhc_matrix IMPLEMENTATION.
     DATA it_sizehead_create TYPE TABLE FOR CREATE zi_matrix_005\_Sizehead. " Size Head
     DATA it_size_create     TYPE TABLE FOR CREATE zi_matrix_005\_Size. " Size
 
-    DATA ls_sizehead1 TYPE zi_sizehead_005.
-    DATA ls_sizehead2 TYPE zi_sizehead_005.
+    DATA ls_sizehead1   TYPE zi_sizehead_005.
+    DATA ls_sizehead2   TYPE zi_sizehead_005.
 
     DATA v_model        TYPE string VALUE ''.
     DATA v_color        TYPE string VALUE ''.
@@ -2219,23 +2230,23 @@ CLASS lhc_matrix IMPLEMENTATION.
 *   Read Matrix Draft
     SELECT SINGLE * FROM zmatrix_005d WHERE ( matrixuuid = @matrix-MatrixUUID ) INTO @DATA(wa_matrix_draft).
 
-*   Set Matrix Type ID according to Model
-    SELECT SINGLE * FROM zc_model_005 WHERE ( ModelID = @v_model ) INTO @DATA(wa_model).
-    IF ( sy-subrc = 0 ).
-        IF ( wa_matrix_draft-matrixtypeid <> wa_model-MatrixTypeID ).
-            wa_matrix_draft-matrixtypeid = wa_model-MatrixTypeID.
-            MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
-                ENTITY Matrix
-                UPDATE FIELDS ( MatrixTypeID )
-                WITH VALUE #( (
-                    %tky  = matrix-%tky
-                    MatrixTypeID    = matrix-MatrixTypeID
-                ) )
-                FAILED DATA(failed1)
-                MAPPED DATA(mapped1)
-                REPORTED DATA(reported1).
-        ENDIF.
-    ENDIF.
+**   Set Matrix Type ID according to Model
+*    SELECT SINGLE * FROM zc_model_005 WHERE ( ModelID = @v_model ) INTO @DATA(wa_model).
+*    IF ( sy-subrc = 0 ).
+*        IF ( wa_matrix_draft-matrixtypeid <> wa_model-MatrixTypeID ).
+*            wa_matrix_draft-matrixtypeid = wa_model-MatrixTypeID.
+*            MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
+*                ENTITY Matrix
+*                UPDATE FIELDS ( MatrixTypeID )
+*                WITH VALUE #( (
+*                    %tky  = matrix-%tky
+*                    MatrixTypeID    = matrix-MatrixTypeID
+*                ) )
+*                FAILED DATA(failed1)
+*                MAPPED DATA(mapped1)
+*                REPORTED DATA(reported1).
+*        ENDIF.
+*    ENDIF.
 
     IF ( matrix-Copying = abap_true ). " Copy Color
 *       If Only Color Changed
@@ -2244,9 +2255,9 @@ CLASS lhc_matrix IMPLEMENTATION.
         ENDIF.
     ELSE. " Default Behavior
 *       If No Change
-        IF ( ( wa_matrix-model = wa_matrix_draft-model ) AND ( wa_matrix-color = wa_matrix_draft-color ) AND ( wa_matrix-matrixtypeid = wa_matrix_draft-matrixtypeid ) AND ( wa_matrix-country = wa_matrix_draft-country ) ).
+*        IF ( ( wa_matrix-model = wa_matrix_draft-model ) AND ( wa_matrix-color = wa_matrix_draft-color ) AND ( wa_matrix-matrixtypeid = wa_matrix_draft-matrixtypeid ) AND ( wa_matrix-country = wa_matrix_draft-country ) ).
 *            RETURN.
-        ENDIF.
+*        ENDIF.
     ENDIF.
 
 *   Read Size Table
@@ -2254,7 +2265,8 @@ CLASS lhc_matrix IMPLEMENTATION.
         ENTITY Matrix
         BY \_Size
         ALL FIELDS WITH VALUE #( (
-            %tky = matrix-%tky
+            %tky-%is_draft = is_draft
+            %tky-MatrixUUID = i_matrixuuid
         ) )
         RESULT DATA(lt_size)
         FAILED DATA(ls_failed2)
@@ -2493,43 +2505,49 @@ CLASS lhc_matrix IMPLEMENTATION.
         ENDCASE.
     ENDLOOP.
 
-    APPEND VALUE #( MatrixUUID = matrix-MatrixUUID
+    APPEND VALUE #(
+        %tky-%is_draft  = is_draft
+        %tky-MatrixUUID = i_matrixuuid
         %target = VALUE #( (
-            MatrixUUID = wa_matrix_draft-MatrixUUID
-            SizeID      = 1
-            Back        = 'Back (label)'
-            a           = ls_sizehead1-a
-            b           = ls_sizehead1-b
-            c           = ls_sizehead1-c
-            d           = ls_sizehead1-d
-            e           = ls_sizehead1-e
-            f           = ls_sizehead1-f
-            g           = ls_sizehead1-g
-            h           = ls_sizehead1-h
-            i           = ls_sizehead1-i
-            j           = ls_sizehead1-j
-            k           = ls_sizehead1-k
-            l           = ls_sizehead1-l
+            %is_draft   = is_draft
+            %key-MatrixUUID = i_matrixuuid
+            %key-SizeID     = 1
+            Back            = 'Back (label)'
+            a               = ls_sizehead1-a
+            b               = ls_sizehead1-b
+            c               = ls_sizehead1-c
+            d               = ls_sizehead1-d
+            e               = ls_sizehead1-e
+            f               = ls_sizehead1-f
+            g               = ls_sizehead1-g
+            h               = ls_sizehead1-h
+            i               = ls_sizehead1-i
+            j               = ls_sizehead1-j
+            k               = ls_sizehead1-k
+            l               = ls_sizehead1-l
         ) )
     ) TO it_sizehead_create.
 
-    APPEND VALUE #( MatrixUUID = matrix-MatrixUUID
+    APPEND VALUE #(
+        %tky-%is_draft  = is_draft
+        %tky-MatrixUUID = i_matrixuuid
         %target = VALUE #( (
-            MatrixUUID = wa_matrix_draft-MatrixUUID
-            SizeID      = 2
-            Back        = 'Back (Id)'
-            a           = ls_sizehead2-a
-            b           = ls_sizehead2-b
-            c           = ls_sizehead2-c
-            d           = ls_sizehead2-d
-            e           = ls_sizehead2-e
-            f           = ls_sizehead2-f
-            g           = ls_sizehead2-g
-            h           = ls_sizehead2-h
-            i           = ls_sizehead2-i
-            j           = ls_sizehead2-j
-            k           = ls_sizehead2-k
-            l           = ls_sizehead2-l
+            %is_draft   = is_draft
+            %key-MatrixUUID = i_matrixuuid
+            %key-SizeID     = 2
+            Back            = 'Back (Id)'
+            a               = ls_sizehead2-a
+            b               = ls_sizehead2-b
+            c               = ls_sizehead2-c
+            d               = ls_sizehead2-d
+            e               = ls_sizehead2-e
+            f               = ls_sizehead2-f
+            g               = ls_sizehead2-g
+            h               = ls_sizehead2-h
+            i               = ls_sizehead2-i
+            j               = ls_sizehead2-j
+            k               = ls_sizehead2-k
+            l               = ls_sizehead2-l
         ) )
     ) TO it_sizehead_create.
 
@@ -2537,8 +2555,9 @@ CLASS lhc_matrix IMPLEMENTATION.
     MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
         ENTITY Sizehead
         DELETE FROM VALUE #( (
-            MatrixUUID = matrix-MatrixUUID
-            SizeID = '1'
+            %tky-%is_draft  = is_draft
+            %tky-MatrixUUID = i_matrixuuid
+            %tky-SizeID     = 1  " N(10)
         ) )
         FAILED DATA(failed6)
         MAPPED DATA(mapped6)
@@ -2547,8 +2566,9 @@ CLASS lhc_matrix IMPLEMENTATION.
     MODIFY ENTITIES OF zi_matrix_005 IN LOCAL MODE
         ENTITY Sizehead
         DELETE FROM VALUE #( (
-            MatrixUUID = matrix-MatrixUUID
-            SizeID = '2'
+            %tky-%is_draft  = is_draft
+            %tky-MatrixUUID = i_matrixuuid
+            %tky-SizeID     = 2 " N(10)
         ) )
         FAILED DATA(failed7)
         MAPPED DATA(mapped7)
@@ -2573,14 +2593,14 @@ CLASS lhc_matrix IMPLEMENTATION.
             CONDENSE cid.
             APPEND VALUE #(
                 %is_draft  = is_draft
-                MatrixUUID = matrix-MatrixUUID
+                MatrixUUID = i_matrixuuid
                 %target = VALUE #( (
-                    %cid        = cid
-                    %is_draft   = is_draft
-                    MatrixUUID  = matrix-MatrixUUID
-                    SizeID      = tabix
-                    Back        = ls_cupsize-CupSizeID
-                    BackSizeID  = ls_cupsize-CupSizeID
+                    %cid            = cid
+                    %is_draft       = is_draft
+                    %key-MatrixUUID = i_matrixuuid
+                    %key-SizeID     = tabix " N(10)
+                    Back            = ls_cupsize-CupSizeID
+                    BackSizeID      = ls_cupsize-CupSizeID
                 ) )
             ) TO it_size_create.
         ENDLOOP.
@@ -2588,13 +2608,23 @@ CLASS lhc_matrix IMPLEMENTATION.
 
 *   Restore Size Table values from Item Table :
 
-*   Read Item Table Draft
-    SELECT * FROM zitem_005d WHERE ( matrixuuid = @matrix-MatrixUUID ) ORDER BY itemid INTO TABLE @DATA(it_item_draft).
+*   Read Item Table
+*    SELECT * FROM zitem_005d WHERE ( matrixuuid = @matrix-MatrixUUID ) ORDER BY itemid INTO TABLE @DATA(it_item_draft).
+    READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+        ENTITY Matrix
+        BY \_Item
+        ALL FIELDS WITH VALUE #( (
+            %tky-%is_draft = is_draft
+            %tky-MatrixUUID = i_matrixuuid
+        ) )
+        RESULT DATA(lt_item)
+        FAILED DATA(failed8)
+        REPORTED DATA(reported8).
 
-    LOOP AT it_item_draft INTO DATA(wa_item_draft) WHERE ( draftentityoperationcode <> 'D' ).
-        SPLIT wa_item_draft-product AT '-' INTO DATA(model) DATA(color) DATA(cupsize) DATA(backsize).
-        IF ( ( model = wa_matrix_draft-model ) AND ( color = wa_matrix_draft-color ) ).
-            DATA(quantity) = wa_item_draft-quantity.
+    LOOP AT lt_item INTO DATA(ls_item).
+        SPLIT ls_item-product AT '-' INTO DATA(model) DATA(color) DATA(cupsize) DATA(backsize).
+        IF ( ( model = i_model ) AND ( color = i_color ) ).
+            DATA(quantity) = ls_item-quantity.
             LOOP AT it_size_create INTO DATA(wa_size_create).
                 DATA(tabix1) = sy-tabix.
                 LOOP AT wa_size_create-%target INTO DATA(target).
@@ -2646,7 +2676,7 @@ CLASS lhc_matrix IMPLEMENTATION.
         MAPPED DATA(it_size_create_mapped)
         REPORTED DATA(it_size_create_reported).
 
-*   Check product existence and update quantities in size table
+*   Check product existence and mark cells in size table
     check_sizes_internal(
         is_draft        = is_draft
         i_matrixuuid    = i_matrixuuid

@@ -224,12 +224,12 @@ annotate entity ZC_MATRIX_005 with
                   position:      40,
                   targetElement: '_Item'}]
 
-//    @UI.hidden: true
+    @UI.hidden: true
     MatrixUUID;
     
-//    @UI: { lineItem:       [ { position: 10, label: 'Matrix ID', importance: #HIGH, cssDefault.width: '300px' } ],
-//           identification: [ { position: 10, label: 'Matrix ID', cssDefault.width: '300px' } ],
-//           selectionField: [ { position: 10 } ] }  
+    @UI: { lineItem:       [ { position: 10, label: 'Matrix ID', importance: #HIGH, cssDefault.width: '300px' } ],
+           identification: [ { position: 10, label: 'Matrix ID', cssDefault.width: '300px' } ],
+           selectionField: [ { position: 10 } ] }  
     @UI.hidden: true
     MatrixID;
     
@@ -237,11 +237,12 @@ annotate entity ZC_MATRIX_005 with
             identification: [ { position: 30, label: 'Sales Order ID', cssDefault.width: '300px', type: #WITH_URL, url: 'SalesOrderURL' },
                               { type: #FOR_ACTION, dataAction: 'check_atp',           label: 'Check ATP',           position: 1 },
                               { type: #FOR_ACTION, dataAction: 'update_items',        label: 'Update Items',        position: 2 },
-                              { type: #FOR_ACTION, dataAction: 'copy_color',          label: 'Copy Color',          position: 3 },
+//                              { type: #FOR_ACTION, dataAction: 'copy_color',          label: 'Copy Color',          position: 3 },
                               { type: #FOR_ACTION, dataAction: 'create_sales_order',  label: 'Create Sales Order',  position: 4 },
                               { type: #FOR_ACTION, dataAction: 'update_sales_order',  label: 'Update Sales Order',  position: 5 },
                               { type: #FOR_ACTION, dataAction: 'get_sales_order',     label: 'Get Sales Order',     position: 6 } ],
             selectionField: [ { position: 30 } ] }
+    @UI: { textArrangement: #TEXT_ONLY }
     SalesOrderID;
 
     @UI: {  lineItem:       [ { position: 40, label: 'Sales Order Type', cssDefault.width: '300px' } ],
@@ -270,24 +271,24 @@ annotate entity ZC_MATRIX_005 with
     @UI: { textArrangement: #TEXT_ONLY }
     SoldToParty;
 
-    @UI: {  lineItem:       [ { position: 90, label: 'Model', cssDefault.width: '300px' } ],
+    @UI: {  lineItem:       [ { position: 90, label: 'Model', cssDefault.width: '300px', exclude: true } ],
             identification: [ { position: 90, label: 'Model', cssDefault.width: '300px' } ],
-            selectionField: [ { position: 90 } ] }
+            selectionField: [ { position: 90, exclude: true } ]}
     Model;
 
-    @UI: {  lineItem:       [ { position: 100, label: 'Color', cssDefault.width: '300px', criticality:'Criticality01', criticalityRepresentation: #WITHOUT_ICON } ],
+    @UI: {  lineItem:       [ { position: 100, label: 'Color', cssDefault.width: '300px', criticality:'Criticality01', criticalityRepresentation: #WITHOUT_ICON, exclude: true } ],
             identification: [ { position: 100, label: 'Color', cssDefault.width: '300px', criticality:'Criticality01', criticalityRepresentation: #WITHOUT_ICON } ],
-            selectionField: [ { position: 100 } ] }
+            selectionField: [ { position: 100, exclude: true } ] }
     Color;
 
-    @UI: {  lineItem:       [ { position: 110, label: 'Matrix Type', cssDefault.width: '200px' } ],
+    @UI: {  lineItem:       [ { position: 110, label: 'Matrix Type', cssDefault.width: '200px', exclude: true } ],
             identification: [ { position: 110, label: 'Matrix Type', cssDefault.width: '200px' } ],
-            selectionField: [ { position: 110 } ] }
+            selectionField: [ { position: 110, exclude: true } ] }
     MatrixTypeID;
 
-    @UI: {  lineItem:       [ { position: 120, label: 'Country', cssDefault.width: '100px' } ],
+    @UI: {  lineItem:       [ { position: 120, label: 'Country', cssDefault.width: '100px', exclude: true } ],
             identification: [ { position: 120, label: 'Country', cssDefault.width: '100px' } ],
-            selectionField: [ { position: 120 } ] }
+            selectionField: [ { position: 120, exclude: true } ] }
     Country;
 
     @UI: {  lineItem:       [ { position: 130, label: 'Customer Reference', cssDefault.width: '300px' } ],
@@ -300,34 +301,34 @@ annotate entity ZC_MATRIX_005 with
             selectionField: [ { position: 140 } ] }
     RequestedDeliveryDate;
 
-    @UI: {  /*lineItem:       [ { position: 150, label: 'Copy Color', cssDefault.width: '300px' } ],*/
-            identification: [ { position: 150, label: 'Copy Color', cssDefault.width: '300px' } ]/*,
-            selectionField: [ { position: 150 } ]*/ }
+    @UI: {  lineItem:       [ { position: 150, label: 'Copy Color', cssDefault.width: '300px', exclude: true } ],
+            identification: [ { position: 150, label: 'Copy Color', cssDefault.width: '300px' } ],
+            selectionField: [ { position: 150, exclude: true } ] }
     @UI.hidden: true
     Copying;
 
-    @UI: {  lineItem:       [ { position: 160, label: 'Models Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'ModelRefURL' } ],
+    @UI: {  lineItem:       [ { position: 160, label: 'Models Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'ModelRefURL', exclude: true } ],
             identification: [ { position: 160, label: 'Models Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'ModelRefURL' } ] }
     ModelRef;
 
     @UI.hidden: true
     ModelRefURL;
 
-    @UI: {  lineItem:       [ { position: 180, label: 'Colors Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'ColorRefURL' } ],
+    @UI: {  lineItem:       [ { position: 180, label: 'Colors Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'ColorRefURL', exclude: true } ],
             identification: [ { position: 180, label: 'Colors Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'ColorRefURL' } ] }
     ColorRef;
 
     @UI.hidden: true
     ColorRefURL;
 
-    @UI: {  lineItem:       [ { position: 200, label: 'Countries Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'CountryRefURL' } ],
+    @UI: {  lineItem:       [ { position: 200, label: 'Countries Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'CountryRefURL', exclude: true } ],
             identification: [ { position: 200, label: 'Countries Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'CountryRefURL' } ] }
     CountryRef;
 
     @UI.hidden: true
     CountryRefURL;
 
-    @UI: {  lineItem:       [ { position: 220, label: 'Matrix Types Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'MatrixTypeRefURL' } ],
+    @UI: {  lineItem:       [ { position: 220, label: 'Matrix Types Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'MatrixTypeRefURL', exclude: true } ],
             identification: [ { position: 220, label: 'Matrix Types Maintenance', cssDefault.width: '200px', type: #WITH_URL, url: 'MatrixTypeRefURL' } ] }
     MatrixTypeRef;
 
