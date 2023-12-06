@@ -4,7 +4,12 @@ define root view entity ZI_MATRIX_005 as select from zmatrix_005 as Matrix
 composition [0..*] of ZI_SIZEHEAD_005 as _Sizehead
 composition [0..*] of ZI_SIZE_005 as _Size
 composition [0..*] of ZI_ITEM_005 as _Item
-association [0..1] to I_Customer  as _Customer on $projection.SoldToParty = _Customer.Customer
+association [0..1] to ZI_SalesOrderType as _SalesOrderType on $projection.SalesOrderType = _SalesOrderType.SalesOrderType
+association [0..1] to I_SalesOrganization as _SalesOrganization on $projection.SalesOrganization = _SalesOrganization.SalesOrganization
+association [0..1] to ZI_DistributionChannel as _DistributionChannel on $projection.DistributionChannel = _DistributionChannel.DistributionChannel
+association [0..1] to I_Division as _OrganizationDivision on $projection.OrganizationDivision = _OrganizationDivision.Division
+association [0..1] to I_Customer as _Customer on $projection.SoldToParty = _Customer.Customer
+
 {
     key matrixuuid as MatrixUUID,
     matrixid as MatrixID,
@@ -65,5 +70,9 @@ association [0..1] to I_Customer  as _Customer on $projection.SoldToParty = _Cus
     _Sizehead, // Make association public
     _Size, // Make association public
     _Item, // Make association public
+    _SalesOrderType, // Make association public
+    _SalesOrganization, // Make association public
+    _DistributionChannel, // Make association public
+    _OrganizationDivision, // Make association public
     _Customer // Make association public
 }

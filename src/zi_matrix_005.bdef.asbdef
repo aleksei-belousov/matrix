@@ -43,15 +43,30 @@ etag master LocalLastChangedAt
   field ( readonly ) CountryRef;
   field ( readonly ) MatrixTypeRef;
 
-  draft determine action Prepare;
-  draft action Resume with additional implementation;
-  draft action Edit with additional implementation;
-  draft action Activate with additional implementation optimized;
-  draft action Discard /*with additional implementation*/;
+// David: "I think it would be great if you could mark the required fields with the usual SAP red „*”,
+// and throw an error message pointing to the incomplete required fields if once tries to save the order,
+// and something is not filled. The error message is currently the following (I did not filled the Sold To Party).
+// I believe the mandatory fields should be the Sales Order Type, Sales Organization, Distribution Channel,
+// Organization Division, Sold To Party, Customer Reference."
+  field ( mandatory ) SalesOrderType;
+  field ( mandatory ) SalesOrganization;
+  field ( mandatory ) DistributionChannel;
+  field ( mandatory ) OrganizationDivision;
+  field ( mandatory ) SoldToParty;
+  field ( mandatory ) PurchaseOrderByCustomer; // Customer Reference
+
+  validation validate_data on save { create; update; field  SalesOrderType, SalesOrganization, DistributionChannel, OrganizationDivision, PurchaseOrderByCustomer; }
 
 //  draft determine action Prepare {
 //    determination on_prepare;
 //  }
+  draft determine action Prepare {
+    validation validate_data;
+  }
+  draft action Resume with additional implementation;
+  draft action Edit with additional implementation;
+  draft action Activate with additional implementation optimized;
+  draft action Discard /*with additional implementation*/;
 
   side effects
   {

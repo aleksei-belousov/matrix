@@ -11,23 +11,28 @@ define root view entity ZC_MATRIX_005 provider contract transactional_query as p
     @EndUserText.label: 'Sales Order ID'
     SalesOrderID,
 
-    @Consumption.valueHelpDefinition: [ { entity: { name: 'ZI_SalesOrderType', element: 'SalesOrderType' } } ]
+    @Consumption.valueHelpDefinition: [ { entity: { name: 'ZI_SalesOrderType', element: 'SalesOrderType' }, useForValidation: true } ]
+    @ObjectModel.foreignKey.association: '_SalesOrderType'
     @EndUserText.label: 'Sales Order Type'
     SalesOrderType,
 
-    @Consumption.valueHelpDefinition: [ { entity: { name: 'I_SalesOrganization', element: 'SalesOrganization' } } ]
+    @Consumption.valueHelpDefinition: [ { entity: { name: 'I_SalesOrganization', element: 'SalesOrganization' }, useForValidation: true } ]
+    @ObjectModel.foreignKey.association: '_SalesOrganization'
     @EndUserText.label: 'Sales Organization'
     SalesOrganization,
 
-    @Consumption.valueHelpDefinition: [ { entity: { name: 'ZI_DistributionChannel', element: 'DistributionChannel' } } ]
+    @Consumption.valueHelpDefinition: [ { entity: { name: 'ZI_DistributionChannel', element: 'DistributionChannel' }, useForValidation: true } ]
+    @ObjectModel.foreignKey.association: '_DistributionChannel'
     @EndUserText.label: 'Distribution Channel'
     DistributionChannel,
 
-    @Consumption.valueHelpDefinition: [ { entity: { name: 'I_Division', element: 'Division' } } ]
+    @Consumption.valueHelpDefinition: [ { entity: { name: 'I_Division', element: 'Division' }, useForValidation: true } ]
+    @ObjectModel.foreignKey.association: '_OrganizationDivision'
     @EndUserText.label: 'Organization Division'
     OrganizationDivision,
 
-    @Consumption.valueHelpDefinition: [ { entity: { name: 'I_Customer', element: 'Customer' } } ]
+    @Consumption.valueHelpDefinition: [ { entity: { name: 'I_Customer', element: 'Customer' }, useForValidation: true } ]
+    @ObjectModel.foreignKey.association: '_Customer'
     @EndUserText.label: 'Sold To Party'
     @ObjectModel.text.element: ['CustomerName']
     SoldToParty,
@@ -111,7 +116,10 @@ define root view entity ZC_MATRIX_005 provider contract transactional_query as p
     _Sizehead: redirected to composition child ZC_SIZEHEAD_005,
     _Size: redirected to composition child ZC_SIZE_005,
     _Item: redirected to composition child ZC_ITEM_005,
-//    _SalesOrderType,
+    _SalesOrderType,
+    _SalesOrganization,
+    _DistributionChannel,
+    _OrganizationDivision,
     _Customer
 
 }

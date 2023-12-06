@@ -55,6 +55,9 @@ CLASS lhc_matrix DEFINITION INHERITING FROM cl_abap_behavior_handler.
     METHODS check_sizes FOR MODIFY
       IMPORTING keys FOR ACTION matrix~check_sizes.
 
+    METHODS validate_data FOR VALIDATE ON SAVE
+      IMPORTING keys FOR matrix~validate_data.
+
 *   Internal methods:
 
 *   Get Availability for ATP check
@@ -1673,6 +1676,94 @@ CLASS lhc_matrix IMPLEMENTATION.
     ENDLOOP.
 
   ENDMETHOD. " check_sizes
+
+  METHOD validate_data.
+
+    " Read transfered instances
+    READ ENTITIES OF zi_matrix_005 IN LOCAL MODE
+        ENTITY Matrix
+        ALL FIELDS
+        WITH CORRESPONDING #( keys )
+        RESULT DATA(entities).
+
+    LOOP AT entities ASSIGNING FIELD-SYMBOL(<entity>).
+
+        IF ( <entity>-%is_draft = '00' ). " Saved
+        ENDIF.
+        IF ( <entity>-%is_draft = '01' ). " Draft
+*           Sales Order Type
+            IF ( <entity>-SalesOrderType IS INITIAL ).
+                APPEND VALUE #( %tky = <entity>-%tky ) TO failed-matrix.
+                APPEND VALUE #( %tky = <entity>-%tky
+                                %msg = new_message_with_text(
+                                    severity = if_abap_behv_message=>severity-error
+                                    text     = 'Sales Order Type missing.'
+                                )
+                )
+                TO reported-matrix.
+            ENDIF.
+*           Sales Organization
+            IF ( <entity>-SalesOrganization IS INITIAL ).
+                APPEND VALUE #( %tky = <entity>-%tky ) TO failed-matrix.
+                APPEND VALUE #( %tky = <entity>-%tky
+                                %msg = new_message_with_text(
+                                    severity = if_abap_behv_message=>severity-error
+                                    text     = 'Sales Organization missing.'
+                                )
+                )
+                TO reported-matrix.
+            ENDIF.
+*           Distribution Channel
+            IF ( <entity>-DistributionChannel IS INITIAL ).
+                APPEND VALUE #( %tky = <entity>-%tky ) TO failed-matrix.
+                APPEND VALUE #( %tky = <entity>-%tky
+                                %msg = new_message_with_text(
+                                    severity = if_abap_behv_message=>severity-error
+                                    text     = 'Distribution Channel missing.'
+                                )
+                )
+                TO reported-matrix.
+            ENDIF.
+*           Organization Division
+            IF ( <entity>-OrganizationDivision IS INITIAL ).
+                APPEND VALUE #( %tky = <entity>-%tky ) TO failed-matrix.
+                APPEND VALUE #( %tky = <entity>-%tky
+                                %msg = new_message_with_text(
+                                    severity = if_abap_behv_message=>severity-error
+                                    text     = 'Organization Division missing.'
+                                )
+                )
+                TO reported-matrix.
+            ENDIF.
+*           Sold To Party
+            IF ( <entity>-SoldToParty IS INITIAL ).
+                APPEND VALUE #( %tky = <entity>-%tky ) TO failed-matrix.
+                APPEND VALUE #( %tky = <entity>-%tky
+                                %msg = new_message_with_text(
+                                    severity = if_abap_behv_message=>severity-error
+                                    text     = 'Sold To Party missing.'
+                                )
+                )
+                TO reported-matrix.
+            ENDIF.
+*           Customer Reference
+            IF ( <entity>-PurchaseOrderByCustomer IS INITIAL ).
+                APPEND VALUE #( %tky = <entity>-%tky ) TO failed-matrix.
+                APPEND VALUE #( %tky = <entity>-%tky
+                                %msg = new_message_with_text(
+                                    severity = if_abap_behv_message=>severity-error
+                                    text     = 'Customer Reference missing.'
+                                )
+                )
+                TO reported-matrix.
+            ENDIF.
+
+        ENDIF.
+
+    ENDLOOP.
+
+  ENDMETHOD. " validate_data
+
 
 *   Internal methods:
 
