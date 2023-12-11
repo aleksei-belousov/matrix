@@ -3,7 +3,5 @@ protected section.
 private section.
 ENDCLASS.
 
-
-
 CLASS ZBP_I_SIZEHEAD_005 IMPLEMENTATION.
 ENDCLASS.

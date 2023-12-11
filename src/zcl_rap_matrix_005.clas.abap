@@ -26,12 +26,9 @@ CLASS zcl_rap_matrix_005 DEFINITION PUBLIC FINAL CREATE PUBLIC.
 *       Update Header Fields
         CLASS-METHODS update_matrix2 IMPORTING VALUE(i_matrix) TYPE zc_matrix_005.
 
-ENDCLASS.
+ENDCLASS. " zcl_rap_matrix_005
 
-
-
-CLASS ZCL_RAP_MATRIX_005 IMPLEMENTATION.
-
+CLASS zcl_rap_matrix_005 IMPLEMENTATION.
 
   METHOD adjust_matrix_items.
 
@@ -72,6 +69,7 @@ CLASS ZCL_RAP_MATRIX_005 IMPLEMENTATION.
         ENDLOOP.
 
 *       Create [New] Matrix Items
+        "#EC CI_VALPAR
         SORT i_salesdocumentitems STABLE BY salesdocumentitem.
         LOOP AT i_salesdocumentitems INTO wa_salesdocumentitem.
 
@@ -109,7 +107,6 @@ CLASS ZCL_RAP_MATRIX_005 IMPLEMENTATION.
     ENDIF.
 
   ENDMETHOD. " adjust_matrix_items
-
 
   METHOD create_matrix_item.
 
@@ -197,7 +194,6 @@ CLASS ZCL_RAP_MATRIX_005 IMPLEMENTATION.
 
   ENDMETHOD. " create_matrix_item.
 
-
   METHOD delete_matrix_item. " Delete Matrix Item
 
     DATA ls_key_data        TYPE zrap_zc_item_005.
@@ -259,14 +255,14 @@ CLASS ZCL_RAP_MATRIX_005 IMPLEMENTATION.
 
   ENDMETHOD. " delete_matrix_item_remote
 
+  METHOD read_matrix_item_list.
+  ENDMETHOD. " read_matrix_item_list
 
   METHOD read_matrix_item.
   ENDMETHOD. " read_matrix_item
 
-
-  METHOD read_matrix_item_list.
-  ENDMETHOD. " read_matrix_item_list
-
+  METHOD update_matrix_item.
+  ENDMETHOD. " update_matrix_item
 
   METHOD update_matrix. " Clear Model/Color
 
@@ -370,7 +366,6 @@ CLASS ZCL_RAP_MATRIX_005 IMPLEMENTATION.
 
   ENDMETHOD. " update_matrix
 
-
   METHOD update_matrix2. " Update Header Fields
 
     DATA ls_key_data        TYPE zrap_zc_matrix_005.
@@ -449,7 +444,4 @@ CLASS ZCL_RAP_MATRIX_005 IMPLEMENTATION.
 
   ENDMETHOD. " update_matrix2
 
-
-  METHOD update_matrix_item.
-  ENDMETHOD. " update_matrix_item
-ENDCLASS.
+ENDCLASS. " zcl_rap_matrix_005

@@ -23,106 +23,34 @@ CLASS zcl_rap_matrix_005_test DEFINITION PUBLIC FINAL CREATE PUBLIC.
 
 ENDCLASS.
 
+CLASS zcl_rap_matrix_005_test IMPLEMENTATION.
 
-
-CLASS ZCL_RAP_MATRIX_005_TEST IMPLEMENTATION.
-
-
-  METHOD create_item. " Create Item
-
-    DATA ls_key_data        TYPE zrap_zc_matrix_005.
-    DATA ls_business_data   TYPE zrap_zc_item_005.
-    DATA lo_client_proxy    TYPE REF TO /iwbep/if_cp_client_proxy.
-    DATA lo_request         TYPE REF TO /iwbep/if_cp_request_create.
-    DATA lo_response        TYPE REF TO /iwbep/if_cp_response_create.
-    DATA lo_http_client     TYPE REF TO if_web_http_client.
+  METHOD if_oo_adt_classrun~main.
 
     TRY.
 
-        DATA(http_destination) = cl_http_destination_provider=>create_by_url( i_url = i_url ).
+        i_url       = 'https://' && cl_abap_context_info=>get_system_url( ).
+        i_username  = 'INBOUND_USER'.
+        i_password  = 'rtrVDDgelabtTjUiybRX}tVD3JksqqfvPpBdJRaL'.
 
-        lo_http_client = cl_web_http_client_manager=>create_by_http_destination( i_destination = http_destination ).
-
-        lo_http_client->accept_cookies( i_allow = abap_true ).
-
-        lo_http_client->get_http_request( )->set_authorization_basic( i_username = i_username i_password = i_password ).
-
-        lo_client_proxy = cl_web_odata_client_factory=>create_v2_remote_proxy(
-*                iv_do_fetch_csrf_token      = abap_true
-                iv_service_definition_name  = 'ZSC_MATRIX_005'
-                io_http_client              = lo_http_client
-                iv_relative_service_root    = '/sap/opu/odata/sap/ZSB_MATRIX_005_ODATA/'
-        ).
-
-*       Prepare key data (matrix)
-        ls_key_data = VALUE #(
-            MatrixUUID                      = '87ED5F17FA6A1EEE94807C16CC430947'
-            IsActiveEntity                  = abap_true
-        ).
-
-         " Navigate to the resource and create a request for the create operation
-*        lo_request = lo_client_proxy->create_resource_for_entity_set( 'ZC_ITEM_005' )->create_request_for_create( ).
-
-*       For Testing
-*        DATA(lo_root_resource)      = lo_client_proxy->create_resource_for_entity_set( 'ZC_MATRIX_005' ).
-*        DATA(lo_resource_matrix)    = lo_root_resource->navigate_with_key( ls_entity_key ).
-*        DATA(lo_child_resource)     = lo_resource_matrix->navigate_to_many( '_ITEM' ).
-*        lo_request                  = lo_child_resource->create_request_for_create( ).
-
-        lo_request = lo_client_proxy->create_resource_for_entity_set( 'ZC_MATRIX_005' )->navigate_with_key( ls_key_data )->navigate_to_many( '_ITEM' )->create_request_for_create( ).
-
-*       Calculate a New Item ID
-*       Read Actual Item Table
-        SELECT MAX( ItemID ) FROM zi_item_005 WHERE ( MatrixUUID = @ls_key_data-MatrixUUID ) INTO @DATA(maxitemid).
-        maxitemid = maxitemid + 1.
-
-*       Prepare business data (item)
-        ls_business_data = VALUE #(
-*           MatrixUUID                     = '87ED5F17FA6A1EEE94807C16CC430947'
-            ItemID                         = maxitemid " '3'
-            IsActiveEntity                 = abap_true
-            model                          = 'Model'
-            color                          = 'Color'
-            cupsize                        = 'Cupsize'
-            backsize                       = 'Backsize'
-            product                        = 'Product'
-            quantity                       = '10'
-            createdby                      = 'Createdby'
-            createdat                      = 20170101123000
-            lastchangedby                  = 'Lastchangedby'
-            lastchangedat                  = 20170101123000
-            locallastchangedat             = 20170101123000
-        ).
-
-        " Set the business data for the created entity
-        lo_request->set_business_data( ls_business_data ).
-
-        " Execute the request
-        lo_response = lo_request->execute( ).
-
-        " Get the after image
-        lo_response->get_business_data( IMPORTING es_business_data = ls_business_data ).
-
-    CATCH /iwbep/cx_cp_remote INTO DATA(lx_remote).
-      " Handle remote Exception
-*      RAISE SHORTDUMP lx_remote.
-
-    CATCH /iwbep/cx_gateway INTO DATA(lx_gateway).
-      " Handle Exception
-*      RAISE SHORTDUMP lx_gateway.
-
-    CATCH cx_web_http_client_error INTO DATA(lx_web_http_client_error).
-      " Handle Exception
-*      RAISE SHORTDUMP lx_web_http_client_error.
-
-    CATCH cx_http_dest_provider_error INTO DATA(lx_http_dest_provider_error).
+    CATCH cx_abap_context_info_error INTO DATA(lx_abap_context_info_error).
         "handle exception
-*      RAISE SHORTDUMP lx_http_dest_provider_error.
 
     ENDTRY.
 
-  ENDMETHOD. " create_item
+*    read_list1( ).
+*    read_matrix( ).
+*    create_matrix( ).
+*    update_matrix( ).
+*    delete_matrix( ).
 
+*    read_list2( ).
+*    read_item( ).
+*    create_item( ).
+*    update_item( ).
+    delete_item( ).
+
+  ENDMETHOD.
 
   METHOD create_matrix. " Create Matrix
 
@@ -238,14 +166,14 @@ CLASS ZCL_RAP_MATRIX_005_TEST IMPLEMENTATION.
 
   ENDMETHOD. " create_matrix
 
+  METHOD create_item. " Create Item
 
-  METHOD delete_item. " Delete Item
-
-    DATA ls_key_data        TYPE zrap_zc_item_005.
-    DATA lo_http_client     TYPE REF TO if_web_http_client.
-    DATA lo_resource        TYPE REF TO /iwbep/if_cp_resource_entity.
+    DATA ls_key_data        TYPE zrap_zc_matrix_005.
+    DATA ls_business_data   TYPE zrap_zc_item_005.
     DATA lo_client_proxy    TYPE REF TO /iwbep/if_cp_client_proxy.
-    DATA lo_request         TYPE REF TO /iwbep/if_cp_request_delete.
+    DATA lo_request         TYPE REF TO /iwbep/if_cp_request_create.
+    DATA lo_response        TYPE REF TO /iwbep/if_cp_response_create.
+    DATA lo_http_client     TYPE REF TO if_web_http_client.
 
     TRY.
 
@@ -258,121 +186,60 @@ CLASS ZCL_RAP_MATRIX_005_TEST IMPLEMENTATION.
         lo_http_client->get_http_request( )->set_authorization_basic( i_username = i_username i_password = i_password ).
 
         lo_client_proxy = cl_web_odata_client_factory=>create_v2_remote_proxy(
-             iv_service_definition_name = 'ZSC_MATRIX_005'
-             io_http_client             = lo_http_client
-             iv_relative_service_root   = 'sap/opu/odata/sap/ZSB_MATRIX_005_ODATA'
-        ).
-
-        "Set entity key
-        ls_key_data = VALUE #(
-            MatrixUUID      = '29C487C9B9D21EDE94ADDD7B50989CC8' " SO 344
-            ItemID          = '1'
-            IsActiveEntity  = abap_true
-        ).
-
-        "Navigate to the resource and create a request for the delete operation
-        lo_request = lo_client_proxy->create_resource_for_entity_set( 'ZC_ITEM_005' )->navigate_with_key( ls_key_data )->create_request_for_delete( ).
-
-        " ETag is needed
-        " You need to retrieve it and then set it here
-*        lo_request->set_if_match( ls_business_data-etag__etag ).
-
-        " Execute the request
-        lo_request->execute( ).
-
-    CATCH /iwbep/cx_cp_remote INTO DATA(lx_remote).
-      " Handle remote Exception
-*      RAISE SHORTDUMP lx_remote.
-
-    CATCH /iwbep/cx_gateway INTO DATA(lx_gateway).
-      " Handle Exception
-*      RAISE SHORTDUMP lx_gateway.
-
-    CATCH cx_web_http_client_error INTO DATA(lx_web_http_client_error).
-      " Handle Exception
-*      RAISE SHORTDUMP lx_web_http_client_error.
-
-    CATCH cx_http_dest_provider_error INTO DATA(lx_http_dest_provider_error).
-        "handle exception
-*      RAISE SHORTDUMP lx_http_dest_provider_error.
-
-    ENDTRY.
-
-  ENDMETHOD. " delete_item
-
-
-  METHOD delete_matrix.
-
-  ENDMETHOD.
-
-
-  METHOD if_oo_adt_classrun~main.
-
-    TRY.
-
-        i_url       = 'https://' && cl_abap_context_info=>get_system_url( ).
-        i_username  = 'INBOUND_USER'.
-        i_password  = 'rtrVDDgelabtTjUiybRX}tVD3JksqqfvPpBdJRaL'.
-
-    CATCH cx_abap_context_info_error INTO DATA(lx_abap_context_info_error).
-        "handle exception
-
-    ENDTRY.
-
-*    read_list1( ).
-*    read_matrix( ).
-*    create_matrix( ).
-*    update_matrix( ).
-*    delete_matrix( ).
-
-*    read_list2( ).
-*    read_item( ).
-*    create_item( ).
-*    update_item( ).
-    delete_item( ).
-
-  ENDMETHOD.
-
-
-  METHOD read_item.
-
-  ENDMETHOD.
-
-
-  METHOD read_list1. " Read List of Matrix
-
-    DATA lt_business_data TYPE TABLE OF zrap_zc_matrix_005.
-    DATA lo_http_client   TYPE REF TO if_web_http_client.
-    DATA lo_client_proxy  TYPE REF TO /iwbep/if_cp_client_proxy.
-    DATA lo_request       TYPE REF TO /iwbep/if_cp_request_read_list.
-    DATA lo_response      TYPE REF TO /iwbep/if_cp_response_read_lst.
-
-    TRY.
-
-        DATA(http_destination) = cl_http_destination_provider=>create_by_url( i_url = i_url ).
-
-        lo_http_client = cl_web_http_client_manager=>create_by_http_destination( i_destination = http_destination ).
-
-        lo_http_client->accept_cookies( i_allow = abap_true ).
-
-        lo_http_client->get_http_request( )->set_authorization_basic( i_username = i_username i_password = i_password ).
-
-        lo_client_proxy = cl_web_odata_client_factory=>create_v2_remote_proxy(
-             EXPORTING
 *                iv_do_fetch_csrf_token      = abap_true
                 iv_service_definition_name  = 'ZSC_MATRIX_005'
                 io_http_client              = lo_http_client
-                iv_relative_service_root    = '/sap/opu/odata/sap/ZSB_MATRIX_005_ODATA/' ).
+                iv_relative_service_root    = '/sap/opu/odata/sap/ZSB_MATRIX_005_ODATA/'
+        ).
 
-        " Navigate to the resource and create a request for the read operation
-        lo_request = lo_client_proxy->create_resource_for_entity_set( 'ZC_MATRIX_005' )->create_request_for_read( ).
+*       Prepare key data (matrix)
+        ls_key_data = VALUE #(
+            MatrixUUID                      = '87ED5F17FA6A1EEE94807C16CC430947'
+            IsActiveEntity                  = abap_true
+        ).
 
-        lo_request->set_top( 50 )->set_skip( 0 ).
+         " Navigate to the resource and create a request for the create operation
+*        lo_request = lo_client_proxy->create_resource_for_entity_set( 'ZC_ITEM_005' )->create_request_for_create( ).
 
-        " Execute the request and retrieve the business data
+*       For Testing
+*        DATA(lo_root_resource)      = lo_client_proxy->create_resource_for_entity_set( 'ZC_MATRIX_005' ).
+*        DATA(lo_resource_matrix)    = lo_root_resource->navigate_with_key( ls_entity_key ).
+*        DATA(lo_child_resource)     = lo_resource_matrix->navigate_to_many( '_ITEM' ).
+*        lo_request                  = lo_child_resource->create_request_for_create( ).
+
+        lo_request = lo_client_proxy->create_resource_for_entity_set( 'ZC_MATRIX_005' )->navigate_with_key( ls_key_data )->navigate_to_many( '_ITEM' )->create_request_for_create( ).
+
+*       Calculate a New Item ID
+*       Read Actual Item Table
+        SELECT MAX( ItemID ) FROM zi_item_005 WHERE ( MatrixUUID = @ls_key_data-MatrixUUID ) INTO @DATA(maxitemid).
+        maxitemid = maxitemid + 1.
+
+*       Prepare business data (item)
+        ls_business_data = VALUE #(
+*           MatrixUUID                     = '87ED5F17FA6A1EEE94807C16CC430947'
+            ItemID                         = maxitemid " '3'
+            IsActiveEntity                 = abap_true
+            model                          = 'Model'
+            color                          = 'Color'
+            cupsize                        = 'Cupsize'
+            backsize                       = 'Backsize'
+            product                        = 'Product'
+            quantity                       = '10'
+            createdby                      = 'Createdby'
+            createdat                      = 20170101123000
+            lastchangedby                  = 'Lastchangedby'
+            lastchangedat                  = 20170101123000
+            locallastchangedat             = 20170101123000
+        ).
+
+        " Set the business data for the created entity
+        lo_request->set_business_data( ls_business_data ).
+
+        " Execute the request
         lo_response = lo_request->execute( ).
 
-        lo_response->get_business_data( IMPORTING et_business_data = lt_business_data ).
+        " Get the after image
+        lo_response->get_business_data( IMPORTING es_business_data = ls_business_data ).
 
     CATCH /iwbep/cx_cp_remote INTO DATA(lx_remote).
       " Handle remote Exception
@@ -392,13 +259,7 @@ CLASS ZCL_RAP_MATRIX_005_TEST IMPLEMENTATION.
 
     ENDTRY.
 
-  ENDMETHOD. " read_list1
-
-
-  METHOD read_list2.
-
-  ENDMETHOD.
-
+  ENDMETHOD. " create_item
 
   METHOD read_matrix. " Read Matrix
 
@@ -463,11 +324,125 @@ CLASS ZCL_RAP_MATRIX_005_TEST IMPLEMENTATION.
 
   ENDMETHOD. "read_matrix
 
+  METHOD read_list1. " Read List of Matrix
 
-  METHOD update_item.
+    DATA lt_business_data TYPE TABLE OF zrap_zc_matrix_005.
+    DATA lo_http_client   TYPE REF TO if_web_http_client.
+    DATA lo_client_proxy  TYPE REF TO /iwbep/if_cp_client_proxy.
+    DATA lo_request       TYPE REF TO /iwbep/if_cp_request_read_list.
+    DATA lo_response      TYPE REF TO /iwbep/if_cp_response_read_lst.
+
+    TRY.
+
+        DATA(http_destination) = cl_http_destination_provider=>create_by_url( i_url = i_url ).
+
+        lo_http_client = cl_web_http_client_manager=>create_by_http_destination( i_destination = http_destination ).
+
+        lo_http_client->accept_cookies( i_allow = abap_true ).
+
+        lo_http_client->get_http_request( )->set_authorization_basic( i_username = i_username i_password = i_password ).
+
+        lo_client_proxy = cl_web_odata_client_factory=>create_v2_remote_proxy(
+             EXPORTING
+*                iv_do_fetch_csrf_token      = abap_true
+                iv_service_definition_name  = 'ZSC_MATRIX_005'
+                io_http_client              = lo_http_client
+                iv_relative_service_root    = '/sap/opu/odata/sap/ZSB_MATRIX_005_ODATA/' ).
+
+        " Navigate to the resource and create a request for the read operation
+        lo_request = lo_client_proxy->create_resource_for_entity_set( 'ZC_MATRIX_005' )->create_request_for_read( ).
+
+        lo_request->set_top( 50 )->set_skip( 0 ).
+
+        " Execute the request and retrieve the business data
+        lo_response = lo_request->execute( ).
+
+        lo_response->get_business_data( IMPORTING et_business_data = lt_business_data ).
+
+    CATCH /iwbep/cx_cp_remote INTO DATA(lx_remote).
+      " Handle remote Exception
+*      RAISE SHORTDUMP lx_remote.
+
+    CATCH /iwbep/cx_gateway INTO DATA(lx_gateway).
+      " Handle Exception
+*      RAISE SHORTDUMP lx_gateway.
+
+    CATCH cx_web_http_client_error INTO DATA(lx_web_http_client_error).
+      " Handle Exception
+*      RAISE SHORTDUMP lx_web_http_client_error.
+
+    CATCH cx_http_dest_provider_error INTO DATA(lx_http_dest_provider_error).
+        "handle exception
+*      RAISE SHORTDUMP lx_http_dest_provider_error.
+
+    ENDTRY.
+
+  ENDMETHOD. " read_list1
+
+  METHOD delete_item. " Delete Item
+
+    DATA ls_key_data        TYPE zrap_zc_item_005.
+    DATA lo_http_client     TYPE REF TO if_web_http_client.
+    DATA lo_resource        TYPE REF TO /iwbep/if_cp_resource_entity.
+    DATA lo_client_proxy    TYPE REF TO /iwbep/if_cp_client_proxy.
+    DATA lo_request         TYPE REF TO /iwbep/if_cp_request_delete.
+
+    TRY.
+
+        DATA(http_destination) = cl_http_destination_provider=>create_by_url( i_url = i_url ).
+
+        lo_http_client = cl_web_http_client_manager=>create_by_http_destination( i_destination = http_destination ).
+
+        lo_http_client->accept_cookies( i_allow = abap_true ).
+
+        lo_http_client->get_http_request( )->set_authorization_basic( i_username = i_username i_password = i_password ).
+
+        lo_client_proxy = cl_web_odata_client_factory=>create_v2_remote_proxy(
+             iv_service_definition_name = 'ZSC_MATRIX_005'
+             io_http_client             = lo_http_client
+             iv_relative_service_root   = 'sap/opu/odata/sap/ZSB_MATRIX_005_ODATA'
+        ).
+
+        "Set entity key
+        ls_key_data = VALUE #(
+            MatrixUUID      = '29C487C9B9D21EDE94ADDD7B50989CC8' " SO 344
+            ItemID          = '1'
+            IsActiveEntity  = abap_true
+        ).
+
+        "Navigate to the resource and create a request for the delete operation
+        lo_request = lo_client_proxy->create_resource_for_entity_set( 'ZC_ITEM_005' )->navigate_with_key( ls_key_data )->create_request_for_delete( ).
+
+        " ETag is needed
+        " You need to retrieve it and then set it here
+*        lo_request->set_if_match( ls_business_data-etag__etag ).
+
+        " Execute the request
+        lo_request->execute( ).
+
+    CATCH /iwbep/cx_cp_remote INTO DATA(lx_remote).
+      " Handle remote Exception
+*      RAISE SHORTDUMP lx_remote.
+
+    CATCH /iwbep/cx_gateway INTO DATA(lx_gateway).
+      " Handle Exception
+*      RAISE SHORTDUMP lx_gateway.
+
+    CATCH cx_web_http_client_error INTO DATA(lx_web_http_client_error).
+      " Handle Exception
+*      RAISE SHORTDUMP lx_web_http_client_error.
+
+    CATCH cx_http_dest_provider_error INTO DATA(lx_http_dest_provider_error).
+        "handle exception
+*      RAISE SHORTDUMP lx_http_dest_provider_error.
+
+    ENDTRY.
+
+  ENDMETHOD. " delete_item
+
+  METHOD delete_matrix.
 
   ENDMETHOD.
-
 
   METHOD update_matrix. " Update Matrix
 
@@ -570,4 +545,17 @@ CLASS ZCL_RAP_MATRIX_005_TEST IMPLEMENTATION.
     ENDTRY.
 
   ENDMETHOD. " update_matrix
+
+  METHOD read_item.
+
+  ENDMETHOD.
+
+  METHOD read_list2.
+
+  ENDMETHOD.
+
+  METHOD update_item.
+
+  ENDMETHOD.
+
 ENDCLASS.
